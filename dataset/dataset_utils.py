@@ -31,6 +31,11 @@ def save_to_npz(x, y, data_dir, filename):
         filename: filename of the npz file.
     """
     assert x.shape[0] == y.shape[0]
-    np.savez(os.path.join(data_dir, filename), x=x, y=y)
-    logger.info("'{}' saved to '{}'".format(filename, os.path.join(data_dir, filename)))
+
+    fpath = os.path.join(data_dir, filename)
+    if os.path.exists(fpath):
+        os.remove(fpath)
+        logger.debug("'{}' existed and it has been removed!")
+    np.savez(fpath, x=x, y=y)
+    logger.info("'{}' saved to '{}'".format(filename, fpath))
     
