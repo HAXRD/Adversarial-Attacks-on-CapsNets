@@ -300,6 +300,73 @@ def train(hparams, num_gpus, data_dir, dataset,
                           write_dir, max_epochs, 
                           joined_result, save_epochs)
 
+def run_test_session(iterator, specs, load_dir, model_type):
+    """Load available ckpts and test accuracy.
+
+    Args:
+        iterator: dataset iterator;
+        specs: dict, dataset specifications;
+        load_dir: str, directory to store ckpts;
+        model_type: 'cnn' or 'caps'.
+    """
+    # find latest step, ckpt, and all step-ckpt pairs
+    latest_step, latest_ckpt_path, _ = find_latest_ckpt_info(load_dir, True)
+    if latest_step == -1 or latest_ckpt_path == None:
+        raise ValueError('{0}\n ckpt files not fould!\n {0}'.format('='*20))
+    else:
+        print('{0}\nFound a ckpt!\n{0}'.format('='*20))
+        latest_ckpt_meta_path = latest_ckpt_path + '.meta'
+
+    with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
+        # import compute graph
+        saver = tf.train.import_meta_graph(latest_ckpt_path)
+        # get dataset object working 
+        batch_data = iterator.get_next()
+
+        # restore variables
+        saver.restore(sess, latest_ckpt_path)
+        sess.run(iterator.initializer)
+
+        acc_t = tf.get_collection('accuracy')[0]
+        accs = []
+
+        while True:
+            try:
+                # get placeholders and create feed dict
+                feed_dict = {}
+                for i in range(specs['num_gpus']):
+                    batch_val = sess.run(batch_data)
+                    feed_dict[tf.get_collection('tower_%d_batched_images' % i)[0]] = batch_val['images']
+                    feed_dict[tf.get_collection('tower_%d_batched_labels' % i)[0]] = batch_val['labels']
+                acc = sess.run(acc_t, feed_dict=feed_dict)
+                accs.append(acc)
+                print("accuracy: {}".format(acc))
+            except tf.errors.OutOfRangeError:
+                break
+        mean_acc = np.mean(accs)
+        print("overall accuracy: {}".format(mean_acc))
+
+def test(num_gpus, data_dir, dataset,
+         adversarial_method,
+         model_type, total_batch_size, image_size,
+         summary_dir):
+    """The function to test the model. One can specify the parameters 
+    to test different models, datasets, with/without adversarially
+    trained model.
+
+    """
+    # define subfolder to load ckpt and report accuracy
+    load_dir = os.path.join(summary_dir, 'train')
+    # declare an empty model graph
+    with tf.Graph().as_default():
+        # get train batched dataset and declare initializable iterator
+        distributed_dataset, specs = get_distributed_dataset(
+            total_batch_size, num_gpus, 1, 
+            data_dir, dataset, image_size, 
+            'test')
+        iterator = distributed_dataset.make_initializable_iterator()
+        run_test_session(iterator, specs, load_dir, model_type)
+
 def main(_):
     hparams = default_hparams()
     if FLAGS.hparams_override:
@@ -310,8 +377,16 @@ def main(_):
                        FLAGS.adversarial_method,
                        FLAGS.model, FLAGS.total_batch_size, FLAGS.image_size, 
                        FLAGS.summary_dir, FLAGS.save_epochs, FLAGS.max_epochs)
-    elif FLAGS.mode == 'test':
+    elif FLAGS.mode == 'gen_adv':
+        # gen_adv(FLAGS.num_gpus, FLAGS.data_dir, FLAGS.dataset, 
+        #         FLAGS.adversarial_method, 
+        #         FLAGS.model, FLAGS.total_batch_size, FLAGS.image_size)
         pass
+    elif FLAGS.mode == 'test':
+        test(FLAGS.num_gpus, FLAGS.data_dir, FLAGS.dataset,
+             FLAGS.adversarial_method,
+             FLAGS.model, FLAGS.total_batch_size, FLAGS.image_size,
+             FLAGS.summary_dir)
     else:
         raise ValueError("No matching mode found for '{}'".format(FLAGS.mode))
 
