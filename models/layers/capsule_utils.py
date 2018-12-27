@@ -170,9 +170,6 @@ def _update_routing(tower_idx, votes, biases, logit_shape, num_ranks, in_dim, ou
             act_norm = tf.norm(activation, axis=-1, name='act_norm')
             tf.add_to_collection('tower_%d_ensemble_acts' % tower_idx, act_norm) # total 10
 
-    """visual""" 
-    for i in range(num_routing):
-        tf.add_to_collection('tower_%d_visual' % tower_idx, activations.read(i))
     return activations.read(num_routing - 1)
     
 
@@ -227,8 +224,6 @@ def _depthwise_conv3d(tower_idx, in_tensor, in_dim, in_atoms,
         conv_reshaped.set_shape((None, in_dim, out_dim, out_atoms, 
             conv_height.value, conv_width.value))
 
-        """visual"""
-        tf.add_to_collection('tower_%d_visual' % tower_idx, conv_reshaped)
         return conv_reshaped, conv_shape, in_shape
         
 def conv_slim_capsule(tower_idx, in_tensor, in_dim, in_atoms,

@@ -138,10 +138,11 @@ class CapsuleModel(model.Model):
 
         # Define input_tensor for input batched_images
         batched_images = tf.placeholder(tf.float32,
-            shape=[None, image_depth, image_size, image_size],
-            name='batched_images') # (?, 3, h, w)
+            shape=[None, image_size, image_size, image_depth],
+            name='batched_images') # (?, h, w, 3)
         """visual"""
         tf.add_to_collection('tower_%d_batched_images' % tower_idx, batched_images)
+        batched_images = tf.transpose(batched_images, [0, 3, 1, 2])
 
         # declare the threshold placeholder for ensemble evaluation
         threshold = tf.placeholder(tf.float32, name='threshold')
@@ -162,8 +163,6 @@ class CapsuleModel(model.Model):
                 data_format='NCHW')
             pre_activation = tf.nn.bias_add(conv1, biases, 
                 data_format='NCHW', name='logits')
-            """visual"""
-            tf.add_to_collection('tower_%d_visual' % tower_idx, pre_activation)
             relu1 = tf.nn.relu(pre_activation, name=scope.name)
             if self._hparams.verbose:
                 tf.summary.histogram(scope.name + '/activation', relu1)
@@ -172,19 +171,17 @@ class CapsuleModel(model.Model):
         # Capsules
         capsule_output = self._build_capsule(hidden1, num_classes, tower_idx)
         logits = tf.norm(capsule_output, axis=-1, name='logits')
-        """visual"""
-        tf.add_to_collection('tower_%d_visual' % tower_idx, logits)
 
         # Declare one-hot format placeholder for batched_labels
         batched_labels = tf.placeholder(tf.int32,
             shape=[None, num_classes], name='batched_labels')
+        """visual"""
         tf.add_to_collection('tower_%d_batched_labels' % tower_idx, batched_labels)
         
         # Reconstruction
         remake = None
         if self._hparams.remake:
             remake = self._remake(capsule_output, batched_images, batched_labels)
-            tf.add_to_collection('tower_%d_recons' % tower_idx, remake)
         else:
             remake = None
         
