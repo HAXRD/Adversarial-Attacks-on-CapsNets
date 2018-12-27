@@ -110,7 +110,7 @@ class Model(object):
         # average accuracies
         accuracy = tf.reduce_mean(stacked_accuracies)
         # stack total_losses
-        total_loss = tf.concat(total_losses)
+        total_loss = tf.reduce_sum(total_losses)
 
         return JoinedResult(summary, train_op, summed_corrects, accuracy, total_loss)
 
