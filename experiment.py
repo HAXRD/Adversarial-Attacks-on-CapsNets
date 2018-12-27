@@ -202,7 +202,7 @@ def run_train_session(iterator, specs,
                         pass
                         # batch_val = ADVERSARIAL_METHOD[adversarial_method](batch_val, loss, sess)
                     feed_dict[tf.get_collection('tower_%d_batched_images' % i)[0]] = batch_val['images']
-                    feed_dict[tf.get_collection('tower_%d_batched_images' % i)[0]] = batch_val['labels']
+                    feed_dict[tf.get_collection('tower_%d_batched_labels' % i)[0]] = batch_val['labels']
                 
                 """Run inferences"""
                 summary, accuracy, _ = sess.run(

@@ -88,10 +88,11 @@ class CNNModel(model.Model):
 
         # Define input_tensor for input batched_images
         batched_images = tf.placeholder(tf.float32, 
-            shape=[None, image_depth, image_size, image_size], 
+            shape=[None, image_size, image_size, image_depth], 
             name='batched_images')
         """visual"""
         tf.add_to_collection('tower_%d_batched_images' % tower_idx, batched_images)
+        batched_images = tf.transpose(batched_images, [0, 3, 1, 2])
         
         # Add convolutional layers
         conv_out = self._add_convs(batched_images, [image_depth, 512, 256], tower_idx)
