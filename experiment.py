@@ -319,7 +319,7 @@ def run_test_session(iterator, specs, load_dir, model_type):
 
     with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
         # import compute graph
-        saver = tf.train.import_meta_graph(latest_ckpt_path)
+        saver = tf.train.import_meta_graph(latest_ckpt_meta_path)
         # get dataset object working 
         batch_data = iterator.get_next()
 
