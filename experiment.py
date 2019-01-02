@@ -368,7 +368,7 @@ def test(num_gpus,
     assert os.path.exists(load_test_path) == True
     assert os.path.isfile(load_test_path) == True
 
-    split = os.path.basename(load_test_path)
+    split = os.path.basename(load_test_path).split('.')[0]
     dataset = os.path.basename(os.path.dirname(load_test_path))
     data_dir = os.path.dirname(os.path.dirname(load_test_path))
 
