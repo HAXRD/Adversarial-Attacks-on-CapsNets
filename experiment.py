@@ -398,9 +398,9 @@ def main(_):
         #         FLAGS.model, FLAGS.total_batch_size, FLAGS.image_size)
         pass
     elif FLAGS.mode == 'test':
-        test(FLAGS.num_gpus, FLAGS.data_dir, FLAGS.dataset,
-             FLAGS.adversarial_method,
-             FLAGS.model, FLAGS.total_batch_size, FLAGS.image_size,
+        test(FLAGS.num_gpus, 
+             FLAGS.total_batch_size, FLAGS.image_size,
+             FLAGS.summary_dir,
              FLAGS.load_test_path)
     else:
         raise ValueError("No matching mode found for '{}'".format(FLAGS.mode))

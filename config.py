@@ -33,8 +33,8 @@ tf.flags.DEFINE_string('mode', 'train',
                        'train: train the model;\n'
                        'test: test the model;\n'
                        'evaluate: evaluate the model for both training and testing set using different evaluation metrics;\n')
-tf.flags.DEFINE_string('adversarial_method', None,
-                       'None: no adversarial training method applied;\n'
+tf.flags.DEFINE_string('adversarial_method', 'Default',
+                       'Default: no adversarial training method applied;\n'
                        'FGSM: fast gradient sign method;\n'
                        'BIM: basic iterative method;\n'
                        'LLCM: least-likely class method.')
