@@ -19,18 +19,19 @@ import random
 
 import dataset.dataset_utils as dataset_utils
 
-def prepare_dataset(data_dir):
+def prepare_dataset(src_dir, out_dir):
     """This function prepares extract out single dataset into npz 
     format so that the following process operations on different
     dataset can be systemized.
     Args:
-        data_dir: data directory
+        src_dir: source directory;
+        out_dir: output directory.
     """
     
     """Load data from npz file"""
     read_fn = 'mnist.npz'
     try:
-        with np.load(os.path.join(data_dir, read_fn)) as f:
+        with np.load(os.path.join(src_dir, read_fn)) as f:
             train_x, train_y = f['x_train'], f['y_train']
             test_x, test_y = f['x_test'], f['y_test']
             # train_x: (60000, 28, 28), train_y: (60000,)
@@ -45,8 +46,8 @@ def prepare_dataset(data_dir):
     # test_x:  (10000, 28, 28, 1), test_y:  (10000,)
 
     """Save datasets into npz files"""
-    dataset_utils.save_to_npz(train_x, train_y, data_dir, 'train.npz')
-    dataset_utils.save_to_npz(test_x, test_y, data_dir, 'test.npz')
+    dataset_utils.save_to_npz(train_x, train_y, out_dir, 'train.npz')
+    dataset_utils.save_to_npz(test_x, test_y, out_dir, 'test.npz')
 
 def _single_process(image, label, specs, resized_size):
     """Map function to process single instance of dataset object.
@@ -104,13 +105,14 @@ def inputs(total_batch_size, num_gpus, max_epochs, resized_size,
         max_epochs: maximum number of repeats;
         resized_size: image size after resizing;
         data_dir: path to the dataset;
-        split: 'train', 'test' or 'adv_test'
+        split: split set name after stripped out extension.
     Returns:
         batched_dataset: Dataset object, each instance is a feature dictionary;
         specs: dataset specifications.
     """
     
     """Load data from npz files"""
+    assert os.path.exists('{}.npz'.format(split)) == True
     with np.load(os.path.join(data_dir, '{}.npz'.format(split))) as f:
         x, y = f['x'], f['y']
         # x: uint 8, 0 ~ 255

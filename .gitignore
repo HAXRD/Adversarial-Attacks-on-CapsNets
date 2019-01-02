@@ -105,3 +105,4 @@ venv.bak/
 
 *.npz
 *.mat
+data

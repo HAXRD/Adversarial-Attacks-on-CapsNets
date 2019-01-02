@@ -20,26 +20,27 @@ import random
 import dataset.svhn.load_svhn_data as load_svhn_data
 import dataset.dataset_utils as dataset_utils
 
-def prepare_dataset(data_dir):
+def prepare_dataset(src_dir, out_dir):
     """This function prepares extract out single dataset into npz 
     format so that the following process operations on different
     dataset can be systemized.
     Args:
-        data_dir: data directory
+        src_dir: source directory;
+        out_dir: output directory.
     """
     
     """Load data from npz file"""
     try:
-        train_x, train_y = load_svhn_data.load_svhn(data_dir, 'train')
-        test_x, test_y = load_svhn_data.load_svhn(data_dir, 'test')
+        train_x, train_y = load_svhn_data.load_svhn(src_dir, 'train')
+        test_x, test_y = load_svhn_data.load_svhn(src_dir, 'test')
         # train_x: (73257, 32, 32, 3), train_y: (73257,)
         # test_x:  (100, 32, 32, 3), test_y:  (100,)
     except:
         raise ValueError("No mat files found!")
     
     """Save datasets into npz files"""
-    dataset_utils.save_to_npz(train_x, train_y, data_dir, 'train.npz')
-    dataset_utils.save_to_npz(test_x, test_y, data_dir, 'test.npz')
+    dataset_utils.save_to_npz(train_x, train_y, out_dir, 'train.npz')
+    dataset_utils.save_to_npz(test_x, test_y, out_dir, 'test.npz')
 
 def _single_process(image, label, specs, resized_size):
     """Map function to process single instance of dataset object.
@@ -94,13 +95,14 @@ def inputs(total_batch_size, num_gpus, max_epochs, resized_size,
         max_epochs: maximum number of repeats;
         resized_size: image size after resizing;
         data_dir: path to the dataset;
-        split: 'train', 'test' or 'adv_test'
+        split: split set name after stripped out extension.
     Returns:
         batched_dataset: Dataset object, each instance is a feature dictionary;
         specs: dataset specifications.
     """
     
     """Load data from npz files"""
+    assert os.path.exists('{}.npz'.format(split)) == True
     with np.load(os.path.join(data_dir, '{}.npz'.format(split))) as f:
         x, y = f['x'], f['y']
         # x: uint 8, 0 ~ 255

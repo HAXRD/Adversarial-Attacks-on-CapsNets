@@ -50,6 +50,8 @@ tf.flags.DEFINE_string('model', 'cap',
                        'cap or cnn.')
 tf.flags.DEFINE_string('summary_dir', './summary',
                        'The directory to write results.')
+tf.flags.DEFINE_string('load_test_path', None, 
+                       'The (processed) test set file to load.')
 
 def default_hparams():
     """Builds an HParams object with default hperparameters."""

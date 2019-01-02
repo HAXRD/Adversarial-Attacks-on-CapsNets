@@ -27,10 +27,10 @@
     - use the white-box adversarial attack to see the 
       model resistance.
 3. Transferability of adversarial attacks
-            | Caps | Caps+R | CNN |
-    Caps    |  -   |        |     |
-    Caps+R  |      |   -    |     |
-    CNN     |      |        |  -  |
+            | CNN  |  Caps  | Caps+R |
+    CNN     |  -   |        |        |
+    Caps    |      |    -   |        |
+    Caps+R  |      |        |    -   |
 """
 
 from __future__ import absolute_import, division, print_function
@@ -97,11 +97,10 @@ def get_distributed_dataset(total_batch_size, num_gpus,
     """
     assert dataset in ['mnist', 'fashion_mnist', 'svhn', 'cifar10']
     with tf.device('/gpu:0'):
-        if split in ['train', 'test']:
-            assert total_batch_size % num_gpus == 0
-            distributed_dataset, specs = INPUTS[dataset].inputs(
-                total_batch_size, num_gpus, max_epochs, image_size, data_dir, split)
-            return distributed_dataset, specs
+        assert total_batch_size % num_gpus == 0
+        distributed_dataset, specs = INPUTS[dataset].inputs(
+            total_batch_size, num_gpus, max_epochs, image_size, data_dir, split)
+        return distributed_dataset, specs
 
 def find_event_file_path(load_dir):
     """Finds the event file.
@@ -161,7 +160,10 @@ def run_train_session(iterator, specs,
         iterator: dataset iterator;
         specs: dict, dataset specifications;
         adversarial_method: str, adversarial training method;
-        write_dir
+        write_dir: summary directory to store the ckpts;
+        max_epochs: maximum epochs to train the model;
+        joined_results: a namedtuple that stores the related tensors;
+        save_epochs: how many epochs to store a ckpt.
     """
     with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
         # declare summary writer and save the graph in the meanwhile
@@ -272,7 +274,7 @@ def train(hparams, num_gpus, data_dir, dataset,
         max_epochs: maximum epochs to train;
     """
     # define subfolder in {summary_dir}, where we store the event and ckpt files.
-    write_dir = os.path.join(summary_dir, 'train')
+    write_dir = os.path.join(summary_dir, model_type, dataset, adversarial_method, 'train')
     # define model graph
     with tf.Graph().as_default():
         # get batched_dataset and declare initializable iterator
@@ -300,14 +302,13 @@ def train(hparams, num_gpus, data_dir, dataset,
                           write_dir, max_epochs, 
                           joined_result, save_epochs)
 
-def run_test_session(iterator, specs, load_dir, model_type):
+def run_test_session(iterator, specs, load_dir):
     """Load available ckpts and test accuracy.
 
     Args:
         iterator: dataset iterator;
         specs: dict, dataset specifications;
         load_dir: str, directory to store ckpts;
-        model_type: 'cnn' or 'caps'.
     """
     # find latest step, ckpt, and all step-ckpt pairs
     latest_step, latest_ckpt_path, _ = find_latest_ckpt_info(load_dir, True)
@@ -346,26 +347,40 @@ def run_test_session(iterator, specs, load_dir, model_type):
         mean_acc = np.mean(accs)
         print("overall accuracy: {}".format(mean_acc))
 
-def test(num_gpus, data_dir, dataset,
-         adversarial_method,
-         model_type, total_batch_size, image_size,
-         summary_dir):
+def test(num_gpus, 
+         total_batch_size, image_size,
+         summary_dir,
+         load_test_path):
     """The function to test the model. One can specify the parameters 
     to test different models, datasets, with/without adversarially
     trained model.
-
+    
+    Args:
+        num_gpus: number of GPUs available to use;
+        total_batch_size: total batch size, which will be distributed to {num_gpus} GPUs;
+        image_size: image size after cropping/resizing;
+        summary_dir: the directory to write summaries and save the model;
+        load_test_path: test set path to load.
     """
-    # define subfolder to load ckpt and report accuracy
+    # define path to ckpts
     load_dir = os.path.join(summary_dir, 'train')
+    # make sure target test file exists
+    assert os.path.exists(load_test_path) == True
+    assert os.path.isfile(load_test_path) == True
+
+    split = os.path.basename(load_test_path)
+    dataset = os.path.basename(os.path.dirname(load_test_path))
+    data_dir = os.path.dirname(os.path.dirname(load_test_path))
+
     # declare an empty model graph
     with tf.Graph().as_default():
         # get train batched dataset and declare initializable iterator
         distributed_dataset, specs = get_distributed_dataset(
             total_batch_size, num_gpus, 1, 
             data_dir, dataset, image_size, 
-            'test')
+            split)
         iterator = distributed_dataset.make_initializable_iterator()
-        run_test_session(iterator, specs, load_dir, model_type)
+        run_test_session(iterator, specs, load_dir)
 
 def main(_):
     hparams = default_hparams()
@@ -386,7 +401,7 @@ def main(_):
         test(FLAGS.num_gpus, FLAGS.data_dir, FLAGS.dataset,
              FLAGS.adversarial_method,
              FLAGS.model, FLAGS.total_batch_size, FLAGS.image_size,
-             FLAGS.summary_dir)
+             FLAGS.load_test_path)
     else:
         raise ValueError("No matching mode found for '{}'".format(FLAGS.mode))
 
