@@ -102,7 +102,7 @@ def inputs(total_batch_size, num_gpus, max_epochs, resized_size,
     """
     
     """Load data from npz files"""
-    assert os.path.exists('{}.npz'.format(split)) == True
+    assert os.path.exists(os.path.join(data_dir, '{}.npz'.format(split))) == True
     with np.load(os.path.join(data_dir, '{}.npz'.format(split))) as f:
         x, y = f['x'], f['y']
         # x: uint 8, 0 ~ 255
