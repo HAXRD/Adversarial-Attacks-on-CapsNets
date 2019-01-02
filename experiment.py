@@ -370,7 +370,7 @@ def test(num_gpus,
 
     split = os.path.basename(load_test_path).split('.')[0]
     dataset = os.path.basename(os.path.dirname(load_test_path))
-    data_dir = os.path.dirname(os.path.dirname(load_test_path))
+    data_dir = os.path.dirname(load_test_path)
 
     # declare an empty model graph
     with tf.Graph().as_default():
