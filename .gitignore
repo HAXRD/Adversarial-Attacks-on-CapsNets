@@ -103,6 +103,10 @@ venv.bak/
 # mypy
 .mypy_cache/
 
+*.gz
 *.npz
 *.mat
+*.html
+
 data
+debug
