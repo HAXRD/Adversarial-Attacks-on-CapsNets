@@ -404,6 +404,8 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method)
 
         adv_images = []
         adv_labels = []
+
+        counter = 0
         while True:
             try:
                 # get placeholders and create feed dict
@@ -415,10 +417,14 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method)
                     feed_dict[x] = batch_val['images']
                     feed_dict[y] = batch_val['labels']
                     loss = tf.get_collection('tower_%d_loss' % i)[0]
-                    xadv = ADVERSARIAL_METHOD[adversarial_method](loss, y)
+                    xadv = ADVERSARIAL_METHOD[adversarial_method](loss, x)
                     adv_image = sess.run(xadv, feed_dict=feed_dict)
                     adv_images.append(adv_image)
                     adv_labels.append(batch_val['labels'])
+                counter += specs['num_gpus']
+                print("Finished {0}% ~ {1}/{2}".format(
+                    float(counter) / float(specs['total_size']),
+                    counter, specs['total_size']), end='')
             except tf.errors.OutOfRangeError:
                 break
         adv_images = np.concatenate(adv_images, axis=0)
