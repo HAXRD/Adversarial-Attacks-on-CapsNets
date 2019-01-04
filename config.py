@@ -45,9 +45,9 @@ tf.flags.DEFINE_string('data_dir', 'dataset',
 tf.flags.DEFINE_string('dataset', 'mnist',
                        'The dataset to use for the experiment.\n'
                        'mnist, fashion_mnist, svhn, cifar10.')
-tf.flags.DEFINE_string('model', 'cap',
+tf.flags.DEFINE_string('model', 'caps',
                        'The model to use for the experiment.\n'
-                       'cap or cnn.')
+                       'caps, caps_r or cnn.')
 tf.flags.DEFINE_string('summary_dir', './summary',
                        'The directory to write results.')
 tf.flags.DEFINE_string('load_test_path', None, 
