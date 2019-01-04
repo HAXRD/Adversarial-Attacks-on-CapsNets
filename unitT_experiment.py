@@ -30,13 +30,13 @@ class ExperimentTest(tf.test.TestCase):
         train(hparams, num_gpus=2, data_dir='debug/data/caps/mnist', dataset='mnist', 
                        adversarial_method='Default',
                        model_type='caps', total_batch_size=200, image_size=28,
-                       summary_dir='debug/summary/', save_epochs=2, max_epochs=4)
+                       summary_dir='debug/summary/', save_epochs=1, max_epochs=1)
 
     def testTrainSVHN(self):
         train(hparams, num_gpus=2, data_dir='debug/data/caps/svhn', dataset='svhn', 
                        adversarial_method='Default',
                        model_type='caps', total_batch_size=200, image_size=28,
-                       summary_dir='debug/summary/', save_epochs=2, max_epochs=4)
+                       summary_dir='debug/summary/', save_epochs=1, max_epochs=1)
 
     """Test without adversarial examples"""
     def testTestMNIST(self):
