@@ -1,5 +1,12 @@
 #!/bin/bash
 
+find . \( -name __pycache__ -o -name "*.pyc" \) -delete
+
+rm -rf data 
+rm -rf summary
+
+rm -rf debug
+
 rm -rf dataset/mnist/*.npz
 
 rm -rf dataset/fashion_mnist/*.npz
