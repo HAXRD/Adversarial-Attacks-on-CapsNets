@@ -15,14 +15,19 @@
 """Tests for experiment"""
 
 import os 
+import shutil
 import numpy as np 
 import tensorflow as tf 
 
-from experiment import default_hparams, train
+from experiment import default_hparams, train, test
 
 hparams = default_hparams()
 
 class ExperimentTest(tf.test.TestCase):
+
+    def cleanDebugFolder(self):
+        if os.path.exists('debug'):
+           shutil.rmtree('debug')
 
     """Train without adversarial training"""
     def testTrainMNIST(self):
@@ -36,14 +41,19 @@ class ExperimentTest(tf.test.TestCase):
                        adversarial_method='Default',
                        model_type='caps', total_batch_size=200, image_size=28,
                        summary_dir='debug/summary/', save_epochs=2, max_epochs=4)
-        
 
     """Test without adversarial examples"""
     def testTestMNIST(self):
-        pass
+        test(num_gpus=2, 
+             total_batch_size=200, image_size=28,
+             summary_dir='debug/summary/caps/mnist/Default/',
+             load_test_path='debug/data/caps/mnist/test.npz')
 
     def testTestSVHN(self):
-        pass
+        test(num_gpus=2,
+             total_batch_size=200, image_size=28,
+             summary_dir='debug/summary/caps/svhn/Default/',
+             load_test_path='debug/data/caps/svhn/test.npz')
 
 if __name__ == '__main__':
     tf.test.main()
