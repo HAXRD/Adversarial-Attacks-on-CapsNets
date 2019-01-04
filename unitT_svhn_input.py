@@ -14,17 +14,24 @@
 # ==============================================================================
 """Tests for mnist_input"""
 
+import os
 import numpy as np 
 import tensorflow as tf 
 
 import dataset.svhn.svhn_input as svhn_input
 
-SVHN_DATA_DIR = './dataset/svhn'
-
+src_dir = './dataset'
+out_dir = './debug/data'
 class MnistInputTest(tf.test.TestCase):
     
     def testPrepareDataset(self):
-        svhn_input.prepare_dataset(SVHN_DATA_DIR)
+        model_types = ['cnn', 'caps', 'caps_r']
+        dataset = 'svhn'
+        for model_type in model_types:
+            created_dir = os.path.join(out_dir, model_type, dataset)
+            svhn_input.prepare_dataset(
+                os.path.join(src_dir, dataset),
+                created_dir)
 
     def testTrain(self):
         with self.test_session(graph=tf.Graph()) as sess:
@@ -33,7 +40,7 @@ class MnistInputTest(tf.test.TestCase):
                 num_gpus=2,
                 max_epochs=1,
                 resized_size=28,
-                data_dir=SVHN_DATA_DIR,
+                data_dir=os.path.join(out_dir, 'caps', 'svhn'),
                 split='train')
             iterator = batched_dataset.make_initializable_iterator()
             sess.run(iterator.initializer)
