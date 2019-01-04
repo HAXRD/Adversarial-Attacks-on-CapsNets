@@ -382,7 +382,7 @@ def test(num_gpus,
         iterator = distributed_dataset.make_initializable_iterator()
         run_test_session(iterator, specs, load_dir)
 
-def run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method):
+def run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method, all_):
 
     # find latest step, ckpt, and all step-ckpt pairs
     latest_step, latest_ckpt_path, _ = find_latest_ckpt_info(load_dir, True)
@@ -408,7 +408,13 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method)
         total_time = 0
         iteration_time = 0
         counter = 0
-        while True:
+
+        if all_ == None:
+            total_iteration = int(specs['total_size'] // specs['num_gpus'])
+        else:
+            total_iteration = all_
+        
+        for _ in range(total_iteration):
             start_anchor = time.time()
             try:
                 # get placeholders and create feed dict
@@ -440,15 +446,16 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method)
                 break
         adv_images = np.concatenate(adv_images, axis=0)
         adv_labels = np.concatenate(adv_labels, axis=0)
+        adv_labels = np.argmax(adv_labels, axis=1)
         fname = 'test_{}.npz'.format(adversarial_method)
         fpath = os.path.join(data_dir, fname)
-        np.savez(fpath, images=adv_images, labels=adv_labels)
+        np.savez(fpath, x=adv_images, y=adv_labels)
         logger.info("{} saved to '{}'!".format(fname, fpath))
         
 def gen_adv(num_gpus, data_dir, dataset,
             adversarial_method,
             total_batch_size, image_size,
-            summary_dir):
+            summary_dir, all_=None):
     assert total_batch_size == num_gpus
     # define path to ckpts
     load_dir = os.path.join(summary_dir, 'train')
@@ -460,7 +467,7 @@ def gen_adv(num_gpus, data_dir, dataset,
             data_dir, dataset, image_size,
             'test')
         iterator = distributed_dataset.make_initializable_iterator()
-        run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method)
+        run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method, all_)
 
 def main(_):
     hparams = default_hparams()
