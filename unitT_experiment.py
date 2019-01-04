@@ -25,10 +25,6 @@ hparams = default_hparams()
 
 class ExperimentTest(tf.test.TestCase):
 
-    def cleanDebugFolder(self):
-        if os.path.exists('debug'):
-           shutil.rmtree('debug')
-
     """Train without adversarial training"""
     def testTrainMNIST(self):
         train(hparams, num_gpus=2, data_dir='debug/data/caps/mnist', dataset='mnist', 
@@ -82,4 +78,8 @@ class ExperimentTest(tf.test.TestCase):
         self.assertEqual((4,), labels.shape)
 
 if __name__ == '__main__':
+    if os.path.exists('debug/summary/'):
+        shutil.rmtree('debug/summary/')
+        print("Removed 'debug/summary/'")
+
     tf.test.main()
