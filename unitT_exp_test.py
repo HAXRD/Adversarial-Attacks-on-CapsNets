@@ -23,20 +23,7 @@ from experiment import default_hparams, train, test, gen_adv
 
 hparams = default_hparams()
 
-class ExperimentTest(tf.test.TestCase):
-
-    """Train without adversarial training"""
-    def testTrainMNIST(self):
-        train(hparams, num_gpus=2, data_dir='debug/data/caps/mnist', dataset='mnist', 
-                       adversarial_method='Default',
-                       model_type='caps', total_batch_size=200, image_size=28,
-                       summary_dir='debug/summary/', save_epochs=1, max_epochs=1)
-
-    def testTrainSVHN(self):
-        train(hparams, num_gpus=2, data_dir='debug/data/caps/svhn', dataset='svhn', 
-                       adversarial_method='Default',
-                       model_type='caps', total_batch_size=200, image_size=28,
-                       summary_dir='debug/summary/', save_epochs=1, max_epochs=1)
+class ExpTestTest(tf.test.TestCase):
 
     """Test without adversarial examples"""
     def testTestMNIST(self):
@@ -78,8 +65,4 @@ class ExperimentTest(tf.test.TestCase):
         self.assertEqual((4,), labels.shape)
 
 if __name__ == '__main__':
-    if os.path.exists('debug/summary/'):
-        shutil.rmtree('debug/summary/')
-        print("Removed 'debug/summary/'")
-
     tf.test.main()
