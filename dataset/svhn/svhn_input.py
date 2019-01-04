@@ -121,7 +121,7 @@ def inputs(total_batch_size, num_gpus, max_epochs, resized_size,
         'max_epochs': int(max_epochs),
 
         'image_size': 32,
-        'depth': 1,
+        'depth': 3,
         'num_classes': 10
     }
 
