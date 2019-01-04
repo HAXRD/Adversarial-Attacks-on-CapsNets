@@ -399,7 +399,7 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method)
         batch_data = iterator.get_next()
 
         # restore variables
-        sess.restore(sess, latest_ckpt_path)
+        saver.restore(sess, latest_ckpt_path)
         sess.run(iterator.initializer)
 
         adv_images = []
