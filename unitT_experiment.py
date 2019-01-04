@@ -18,7 +18,7 @@ import os
 import numpy as np 
 import tensorflow as tf 
 
-from experiment import *
+from experiment import default_hparams, train
 
 hparams = default_hparams()
 
