@@ -183,6 +183,7 @@ class Model(object):
                 accuracies.append(tower_output.accuracy)
                 tower_grads.append(tower_output.grads)
                 total_losses.append(tower_output.total_loss)
+                tf.add_to_collection('tower_%d_loss' % i, tower_output.total_loss)
 
         # join the results of towers
         joined_result = self._join_tower_results(corrects, accuracies, tower_grads, total_losses)

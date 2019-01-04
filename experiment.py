@@ -374,13 +374,76 @@ def test(num_gpus,
 
     # declare an empty model graph
     with tf.Graph().as_default():
-        # get train batched dataset and declare initializable iterator
+        # get batched dataset and declare initializable iterator
         distributed_dataset, specs = get_distributed_dataset(
             total_batch_size, num_gpus, 1, 
             data_dir, dataset, image_size, 
             split)
         iterator = distributed_dataset.make_initializable_iterator()
         run_test_session(iterator, specs, load_dir)
+
+def run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method):
+
+    # find latest step, ckpt, and all step-ckpt pairs
+    latest_step, latest_ckpt_path, _ = find_latest_ckpt_info(load_dir, True)
+    if latest_step == -1 or latest_ckpt_path == None:
+        raise ValueError('{0}\n ckpt files not fould!\n {0}'.format('='*20))
+    else:
+        print('{0}\nFound a ckpt!\n{0}'.format('='*20))
+        latest_ckpt_meta_path = latest_ckpt_path + '.meta'
+
+    with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
+        # import compute graph
+        saver = tf.train.import_meta_graph(latest_ckpt_meta_path)
+        # get dataset object 
+        batch_data = iterator.get_next()
+
+        # restore variables
+        sess.restore(sess, latest_ckpt_path)
+        sess.run(iterator.initializer)
+
+        adv_images = []
+        adv_labels = []
+        while True:
+            try:
+                # get placeholders and create feed dict
+                feed_dict = {}
+                for i in range(specs['num_gpus']):
+                    batch_val = sess.run(batch_data)
+                    x = tf.get_collection('tower_%d_batched_images' % i)[0]
+                    y = tf.get_collection('tower_%d_batched_labels' % i)[0]
+                    feed_dict[x] = batch_val['images']
+                    feed_dict[y] = batch_val['labels']
+                    loss = tf.get_collection('tower_%d_loss' % i)[0]
+                    xadv = ADVERSARIAL_METHOD[adversarial_method](loss, y)
+                    adv_image = sess.run(xadv, feed_dict=feed_dict)
+                    adv_images.append(adv_image)
+                    adv_labels.append(batch_val['labels'])
+            except tf.errors.OutOfRangeError:
+                break
+        adv_images = np.concatenate(adv_images, axis=0)
+        adv_labels = np.concatenate(adv_labels, axis=0)
+        fname = 'test_{}.npz'.format(adversarial_method)
+        fpath = os.path.join(data_dir, fname)
+        np.savez(fpath, images=adv_images, labels=adv_labels)
+        logger.info("{} saved to '{}'!".format(fname, fpath))
+        
+def gen_adv(num_gpus, data_dir, dataset,
+            adversarial_method,
+            total_batch_size, image_size,
+            summary_dir):
+    assert total_batch_size == num_gpus
+    # define path to ckpts
+    load_dir = os.path.join(summary_dir, 'train')
+    # declare an empty model graph
+    with tf.Graph().as_default():
+        # get batched dataset object and declare initializable iterator
+        distributed_dataset, specs = get_distributed_dataset(
+            total_batch_size, num_gpus, 1,
+            data_dir, dataset, image_size,
+            'test')
+        iterator = distributed_dataset.make_initializable_iterator()
+        run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method)
 
 def main(_):
     hparams = default_hparams()
@@ -393,10 +456,10 @@ def main(_):
                        FLAGS.model, FLAGS.total_batch_size, FLAGS.image_size, 
                        FLAGS.summary_dir, FLAGS.save_epochs, FLAGS.max_epochs)
     elif FLAGS.mode == 'gen_adv':
-        # gen_adv(FLAGS.num_gpus, FLAGS.data_dir, FLAGS.dataset, 
-        #         FLAGS.adversarial_method, 
-        #         FLAGS.model, FLAGS.total_batch_size, FLAGS.image_size)
-        pass
+        gen_adv(FLAGS.num_gpus, FLAGS.data_dir, FLAGS.dataset,
+                FLAGS.adversarial_method,
+                FLAGS.total_batch_size, FLAGS.image_size,
+                FLAGS.summary_dir)
     elif FLAGS.mode == 'test':
         test(FLAGS.num_gpus, 
              FLAGS.total_batch_size, FLAGS.image_size,
