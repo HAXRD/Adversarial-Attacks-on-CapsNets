@@ -33,3 +33,4 @@ wget -P dataset/ https://www.cs.toronto.edu/~kriz/cifar-10-matlab.tar.gz
 tar -C dataset/ -xvzf dataset/cifar-10-matlab.tar.gz 
 cp -r dataset/cifar-10-batches-mat/* dataset/cifar10/
 rm -rf dataset/cifar-10-batches-mat
+rm -rf dataset/cifar-10-matlab*
