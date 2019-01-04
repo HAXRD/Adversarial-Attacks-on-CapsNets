@@ -405,8 +405,11 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method)
         adv_images = []
         adv_labels = []
 
+        total_time = 0
+        iteration_time = 0
         counter = 0
         while True:
+            start_anchor = time.time()
             try:
                 # get placeholders and create feed dict
                 feed_dict = {}
@@ -422,9 +425,17 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method)
                     adv_images.append(adv_image)
                     adv_labels.append(batch_val['labels'])
                 counter += specs['num_gpus']
-                print("Finished {0}% ~ {1}/{2}".format(
-                    float(counter) / float(specs['total_size']),
-                    counter, specs['total_size']), end='')
+
+                iteration_time = time.time() - start_anchor
+                total_time += iteration_time
+
+                print("Finished {0}% ~ {1}/{2}, iteration: {3}s, total: {4}:{5}:{6}".format(
+                    100 * float(counter) / float(specs['total_size']),
+                    counter, specs['total_size'],
+                    iteration_time,
+                    int(total_time // 3600),
+                    int(total_time % 3600 //60),
+                    int(total_time % 3600)))
             except tf.errors.OutOfRangeError:
                 break
         adv_images = np.concatenate(adv_images, axis=0)
