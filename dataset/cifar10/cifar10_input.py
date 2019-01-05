@@ -15,10 +15,9 @@
 import tensorflow as tf 
 import numpy as np 
 import os 
-import random 
 
-import dataset.svhn.load_svhn_data as load_svhn_data
 import dataset.dataset_save as dataset_save
+import dataset.cifar10.load_cifar10_data as load_cifar10_data
 
 def prepare_dataset(src_dir, out_dir):
     """This function prepares extract out single dataset into npz 
@@ -29,12 +28,12 @@ def prepare_dataset(src_dir, out_dir):
         out_dir: output directory.
     """
     
-    """Load data from npz file"""
+    """Load data from mat files"""
     try:
-        train_x, train_y = load_svhn_data.load_svhn(src_dir, 'train')
-        test_x, test_y = load_svhn_data.load_svhn(src_dir, 'test')
-        # train_x: (73257, 32, 32, 3), train_y: (73257,)
-        # test_x:  (100, 32, 32, 3), test_y:  (100,)
+        train_x, train_y = load_cifar10_data.load_cifar10(src_dir, 'train')
+        test_x, test_y = load_cifar10_data.load_cifar10(src_dir, 'test')
+        # train_x: (?, 32, 32, 3), train_y: (?,)
+        # test_x: (?, 32, 32, 3), test_y: (?,)
     except:
         raise ValueError("No mat files found!")
     
@@ -59,31 +58,17 @@ def _single_process(image, label, specs, resized_size):
     """
     if resized_size < specs['image_size']:
         if specs['split'] == 'train':
-            # random cropping 
+            # random cropping
             image = tf.random_crop(image, [resized_size, resized_size, 3])
         elif specs['split'] == 'test':
-            # central cropping 
+            # central cropping
             image = tf.image.resize_image_with_crop_or_pad(
                 image, resized_size, resized_size)
-    # convert from to 0. ~ 1.
+    # convert into 0. ~ 1. 
     image = tf.cast(image, tf.float32)
-
+    
     feature = {
-        'image': image, 
+        'image': image,
         'label': tf.one_hot(label, 10)
     }
     return feature
-
-def _feature_process(feature):
-    """Map function to process batched data inside feature dictionary.
-
-    Args:
-        feature: a dictionary contains image, label, recons_image, recons_label.
-    Returns:
-        batched_feature: a dictionary contains images, labels, recons_images, recons_labels.
-    """
-    batched_feature = {
-        'images': feature['image'],
-        'labels': feature['label'],
-    }
-    return batched_feature

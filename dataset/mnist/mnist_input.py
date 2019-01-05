@@ -17,7 +17,7 @@ import numpy as np
 import os 
 import random 
 
-import dataset.dataset_utils as dataset_utils
+import dataset.dataset_save as dataset_save
 
 def prepare_dataset(src_dir, out_dir):
     """This function prepares extract out single dataset into npz 
@@ -46,12 +46,12 @@ def prepare_dataset(src_dir, out_dir):
     # test_x:  (10000, 28, 28, 1), test_y:  (10000,)
 
     """Convert image range into 0. ~ 1."""
-    train_x = train_x.astype(np.float32) * 1. / 255.
-    test_x = test_x.astype(np.float32) * 1. / 255.
+    # train_x = train_x.astype(np.float32) * 1. / 255.
+    # test_x = test_x.astype(np.float32) * 1. / 255.
 
     """Save datasets into npz files"""
-    dataset_utils.save_to_npz(train_x, train_y, out_dir, 'train.npz')
-    dataset_utils.save_to_npz(test_x, test_y, out_dir, 'test.npz')
+    dataset_save.save_to_npz(train_x, train_y, out_dir, 'train.npz')
+    dataset_save.save_to_npz(test_x, test_y, out_dir, 'test.npz')
 
 def _single_process(image, label, specs, resized_size):
     """Map function to process single instance of dataset object.
@@ -76,89 +76,13 @@ def _single_process(image, label, specs, resized_size):
         if resized_size < specs['image_size']:
             image = tf.image.resize_image_with_crop_or_pad(
                 image, resized_size, resized_size)
-    # convert from to 0. ~ 1.
-    image = tf.cast(image, tf.float32)
+
+    if specs['split'] in ['train', 'test']:
+        # convert to 0. ~ 1.
+        image = tf.cast(image, tf.float32) * (1. / 255.)
 
     feature = {
         'image': image, 
         'label': tf.one_hot(label, 10)
     }
     return feature
-
-def _feature_process(feature):
-    """Map function to process batched data inside feature dictionary.
-
-    Args:
-        feature: a dictionary contains image, label.
-    Returns:
-        batched_feature: a dictionary contains images, labels.
-    """
-    batched_feature = {
-        'images': feature['image'],
-        'labels': feature['label']
-    }
-    return batched_feature
-
-def inputs(total_batch_size, num_gpus, max_epochs, resized_size, 
-           data_dir, split):
-    """Construct inputs for mnist dataset.
-
-    Args:
-        total_batch_size: total number of images per batch;
-        num_gpus: number of GPUs available to use;
-        max_epochs: maximum number of repeats;
-        resized_size: image size after resizing;
-        data_dir: path to the dataset;
-        split: split set name after stripped out extension.
-    Returns:
-        batched_dataset: Dataset object, each instance is a feature dictionary;
-        specs: dataset specifications.
-    """
-    
-    """Load data from npz files"""
-    assert os.path.exists(os.path.join(data_dir, '{}.npz'.format(split))) == True
-    with np.load(os.path.join(data_dir, '{}.npz'.format(split))) as f:
-        x, y = f['x'], f['y']
-        # x: float32, 0. ~ 1. 
-        # y: uint 8, 0 ~ 9
-    assert x.shape[0] == y.shape[0]
-
-    """Define specs"""
-    specs = {
-        'split': split,
-        'total_size': int(x.shape[0]),
-        
-        'total_batch_size': int(total_batch_size),
-        'steps_per_epoch': int(x.shape[0] // total_batch_size),
-        'num_gpus': int(num_gpus),
-        'batch_size': int(total_batch_size / num_gpus),
-        'max_epochs': int(max_epochs), # number of epochs to repeat
-
-        'image_size': x.shape[1],
-        'depth': x.shape[3],
-        'num_classes': 10
-    }
-
-    """Process dataset object"""
-    dataset = tf.data.Dataset.from_tensor_slices((x, y)) # ((28, 28, 1), (,))
-    dataset = dataset.prefetch(
-        buffer_size=specs['batch_size']*specs['num_gpus']*2)
-
-    if split == 'train':
-        dataset = dataset.apply(tf.contrib.data.shuffle_and_repeat(
-            buffer_size=specs['batch_size']*specs['num_gpus']*10,
-            count=specs['max_epochs']))
-    else:
-        dataset = dataset.repeat(specs['max_epochs'])
-    
-    dataset = dataset.map(
-        lambda image, label: _single_process(image, label, specs, resized_size), num_parallel_calls=3)
-    specs['image_size'] = resized_size
-
-    batched_dataset = dataset.batch(specs['batch_size'])
-    batched_dataset = batched_dataset.map(
-        _feature_process, 
-        num_parallel_calls=3)
-    batched_dataset = batched_dataset.prefetch(specs['num_gpus'])
-
-    return batched_dataset, specs

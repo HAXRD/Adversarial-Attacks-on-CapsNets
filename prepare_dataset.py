@@ -19,12 +19,16 @@ import os
 
 import shutil
 
-from dataset.mnist import mnist_input
-from dataset.svhn import svhn_input
+import dataset.mnist.mnist_input as mnist_input
+import dataset.fashion_mnist.fashion_mnist_input as fashion_mnist_input
+import dataset.svhn.svhn_input as svhn_input
+import dataset.cifar10.cifar10_input as cifar10_input
 
 PREPARE_DATASET = {
     'mnist': mnist_input.prepare_dataset,
-    'svhn': svhn_input.prepare_dataset
+    'fashion_mnist': fashion_mnist_input.prepare_dataset,
+    'svhn': svhn_input.prepare_dataset,
+    'cifar10': cifar10_input.prepare_dataset
 }
 
 def init_unified_datasets(src_dir, out_dir):
@@ -32,8 +36,7 @@ def init_unified_datasets(src_dir, out_dir):
         shutil.rmtree(out_dir)
     
     model_types = ['cnn', 'caps', 'caps_r']
-    # datasets = ['mnist', 'fashion_mnist', 'svhn', 'cifar10']
-    datasets = ['mnist', 'svhn']
+    datasets = ['mnist', 'fashion_mnist', 'svhn', 'cifar10']
     for model_type in model_types:
         for dataset in datasets:
             created_dir = os.path.join(out_dir, model_type, dataset)

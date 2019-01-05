@@ -12,30 +12,97 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-
+import tensorflow as tf 
 import numpy as np 
 import os 
 
-import logging
-import daiquiri
+import dataset.mnist.mnist_input as mnist_input
+import dataset.fashion_mnist.fashion_mnist_input as fashion_mnist_input
+import dataset.svhn.svhn_input as svhn_input
+import dataset.cifar10.cifar10_input as cifar10_input
 
-daiquiri.setup(level=logging.INFO)
-logger = daiquiri.getLogger(__name__)
+SINGLE_PROCESS = {
+    'mnist': mnist_input._single_process,
+    'fashion_mnist': fashion_mnist_input._single_process,
+    'svhn': svhn_input._single_process,
+    'cifar10': cifar10_input._single_process
+}
 
-def save_to_npz(x, y, data_dir, filename):
-    """Save numpy arrays into a npz file
+def _feature_process(feature):
+    """Map function to process batched data inside feature dictionary.
+
     Args:
-        x: images numpy array;
-        y: labels numpy array;
-        data_dir: directory to store npz file;
-        filename: filename of the npz file.
+        feature: a dictionary contains image, label.
+    Returns:
+        batched_feature: a dictionary contains images, labels.
     """
+    batched_feature = {
+        'images': feature['image'],
+        'labels': feature['label']
+    }
+    return batched_feature
+
+
+def inputs(dataset_name, total_batch_size, num_gpus, max_epochs, resized_size, 
+           data_dir, split):
+    """Construct inputs for mnist dataset.
+
+    Args:
+        dataset: dataset name;
+        total_batch_size: total number of images per batch;
+        num_gpus: number of GPUs available to use;
+        max_epochs: maximum number of repeats;
+        resized_size: image size after resizing;
+        data_dir: path to the dataset;
+        split: split set name after stripped out extension.
+    Returns:
+        batched_dataset: Dataset object, each instance is a feature dictionary;
+        specs: dataset specifications.
+    """
+    
+    """Load data from npz files"""
+    assert os.path.exists(os.path.join(data_dir, '{}.npz'.format(split))) == True
+    with np.load(os.path.join(data_dir, '{}.npz'.format(split))) as f:
+        x, y = f['x'], f['y']
+        # x: float32, 0. ~ 1.
+        # y: uint 8, 0 ~ 9
     assert x.shape[0] == y.shape[0]
 
-    fpath = os.path.join(data_dir, filename)
-    if os.path.exists(fpath):
-        os.remove(fpath)
-        logger.debug("'{}' existed and it has been removed!")
-    np.savez(fpath, x=x, y=y)
-    logger.info("'{}' saved to '{}'".format(filename, fpath))
+    """Define specs"""
+    specs = {
+        'split': split, 
+        'total_size': int(x.shape[0]),
+
+        'total_batch_size': int(total_batch_size),
+        'steps_per_epoch': int(x.shape[0] // total_batch_size),
+        'num_gpus': int(num_gpus),
+        'batch_size': int(total_batch_size / num_gpus),
+        'max_epochs': int(max_epochs),
+
+        'image_size': x.shape[1],
+        'depth': x.shape[3],
+        'num_classes': 10
+    }
+
+    """Process dataset object"""
+    dataset = tf.data.Dataset.from_tensor_slices((x, y)) # ((32, 32, 3), (,))
+    dataset = dataset.prefetch(
+        buffer_size=specs['batch_size']*specs['num_gpus']*2)
     
+    if split == 'train':
+        dataset = dataset.apply(tf.contrib.data.shuffle_and_repeat(
+            buffer_size=specs['batch_size']*specs['num_gpus']*10,
+            count=specs['max_epochs']))
+    else:
+        dataset = dataset.repeat(specs['max_epochs'])
+
+    dataset = dataset.map(
+        lambda image, label: SINGLE_PROCESS[dataset_name](image, label, specs, resized_size), num_parallel_calls=3)
+    specs['image_size'] = resized_size
+
+    batched_dataset = dataset.batch(specs['batch_size'])
+    batched_dataset = batched_dataset.map(
+        _feature_process, num_parallel_calls=3)
+    batched_dataset = batched_dataset.prefetch(specs['num_gpus'])
+
+    return batched_dataset, specs

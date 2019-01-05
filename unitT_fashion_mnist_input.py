@@ -12,37 +12,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Tests for mnist_input"""
+"""Tests for fashion_mnist_input"""
 
-import os
+import os 
 import numpy as np 
 import tensorflow as tf 
 
-import dataset.mnist.mnist_input as mnist_input
+import dataset.fashion_mnist.fashion_mnist_input as fashion_mnist_input
 import dataset.dataset_utils as dataset_utils
 
 src_dir = './dataset'
 out_dir = './debug/data'
-class MnistInputTest(tf.test.TestCase):
-    
+class FashionMnistInputTest(tf.test.TestCase):
+
     def testPrepareDataset(self):
         model_types = ['cnn', 'caps', 'caps_r']
-        dataset = 'mnist'
+        dataset = 'fashion_mnist'
         for model_type in model_types:
             created_dir = os.path.join(out_dir, model_type, dataset)
-            mnist_input.prepare_dataset(
-                os.path.join(src_dir, dataset), 
+            fashion_mnist_input.prepare_dataset(
+                os.path.join(src_dir, dataset),
                 created_dir)
 
     def testTrain(self):
         with self.test_session(graph=tf.Graph()) as sess:
             batched_dataset, specs = dataset_utils.inputs(
-                dataset_name='mnist',
+                dataset_name='fashion_mnist',
                 total_batch_size=200,
                 num_gpus=2,
                 max_epochs=1,
-                resized_size=28,
-                data_dir=os.path.join(out_dir, 'caps', 'mnist'),
+                resized_size=28, 
+                data_dir=os.path.join(out_dir, 'caps', 'fashion_mnist'),
                 split='train')
             iterator = batched_dataset.make_initializable_iterator()
             sess.run(iterator.initializer)
@@ -57,3 +57,4 @@ class MnistInputTest(tf.test.TestCase):
 
 if __name__ == '__main__':
     tf.test.main()
+            

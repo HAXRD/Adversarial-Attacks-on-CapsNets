@@ -12,17 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Tests for mnist_input"""
+"""Tests for svhn_input"""
 
 import os
 import numpy as np 
 import tensorflow as tf 
 
 import dataset.svhn.svhn_input as svhn_input
+import dataset.dataset_utils as dataset_utils
 
 src_dir = './dataset'
 out_dir = './debug/data'
-class MnistInputTest(tf.test.TestCase):
+class SvhnInputTest(tf.test.TestCase):
     
     def testPrepareDataset(self):
         model_types = ['cnn', 'caps', 'caps_r']
@@ -35,7 +36,8 @@ class MnistInputTest(tf.test.TestCase):
 
     def testTrain(self):
         with self.test_session(graph=tf.Graph()) as sess:
-            batched_dataset, specs = svhn_input.inputs(
+            batched_dataset, specs = dataset_utils.inputs(
+                dataset_name='svhn',
                 total_batch_size=200,
                 num_gpus=2,
                 max_epochs=1,
