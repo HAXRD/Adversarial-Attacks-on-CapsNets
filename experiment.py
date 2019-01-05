@@ -58,12 +58,7 @@ MODELS = {
     'cnn': cnn_model.CNNModel
 }
 
-from dataset.mnist import mnist_input
-from dataset.svhn import svhn_input
-INPUTS = {
-    'mnist': mnist_input,
-    'svhn': svhn_input,
-}
+import dataset.dataset_utils as dataset_utils
 
 import adversarial_noise
 ADVERSARIAL_METHOD = {
@@ -71,36 +66,6 @@ ADVERSARIAL_METHOD = {
     'BIM':  adversarial_noise.BIM,
     'LLCM': adversarial_noise.LLCM
 }
-
-def get_distributed_dataset(total_batch_size, num_gpus,
-                            max_epochs, data_dir, dataset, image_size, 
-                            split='train'):
-    """Reads the input data using 'inputs' functions.
-
-    For 'train' and 'test' splits,
-        given {num_gpus} GPUs and {total_batch_size}, we distribute 
-        those {total_batch_size} into {num_gpus} partitions,
-        denoted as {batch_size}.
-
-    Args:
-        total_batch_size: total number of data entries over all towers;
-        num_gpus: number of GPUs available to use;
-        max_epochs: for 'train' split, this decides the number of epochs
-            to train the model; for 'test' split, this parameter ≡ 1.
-        data_dir: the directory containing the data;
-        dataset: dataset name;
-        image_size: image size after resizing;
-        split: 'train', 'test'.
-    Returns:
-        batched_dataset: dataset object;
-        specs: dataset specifications.
-    """
-    assert dataset in ['mnist', 'fashion_mnist', 'svhn', 'cifar10']
-    with tf.device('/gpu:0'):
-        assert total_batch_size % num_gpus == 0
-        distributed_dataset, specs = INPUTS[dataset].inputs(
-            total_batch_size, num_gpus, max_epochs, image_size, data_dir, split)
-        return distributed_dataset, specs
 
 def find_event_file_path(load_dir):
     """Finds the event file.
@@ -278,10 +243,10 @@ def train(hparams, num_gpus, data_dir, dataset,
     # define model graph
     with tf.Graph().as_default():
         # get batched_dataset and declare initializable iterator
-        distributed_dataset, specs = get_distributed_dataset(
-            total_batch_size, num_gpus, max_epochs, 
-            data_dir, dataset, image_size,
-            'train')
+        distributed_dataset, specs = dataset_utils.inputs(
+            dataset_name=dataset, total_batch_size=total_batch_size, num_gpus=num_gpus,
+            max_epochs=max_epochs, resized_size=image_size, data_dir=data_dir,
+            split='train')
         iterator = distributed_dataset.make_initializable_iterator()
         # initialize model with hparams and specs
         model = MODELS[model_type](hparams, specs)
@@ -375,10 +340,10 @@ def test(num_gpus,
     # declare an empty model graph
     with tf.Graph().as_default():
         # get batched dataset and declare initializable iterator
-        distributed_dataset, specs = get_distributed_dataset(
-            total_batch_size, num_gpus, 1, 
-            data_dir, dataset, image_size, 
-            split)
+        distributed_dataset, specs = dataset_utils.inputs(
+            dataset_name=dataset, total_batch_size=total_batch_size, num_gpus=num_gpus,
+            max_epochs=1, resized_size=image_size, data_dir=data_dir,
+            split=split)
         iterator = distributed_dataset.make_initializable_iterator()
         run_test_session(iterator, specs, load_dir)
 
@@ -463,10 +428,10 @@ def gen_adv(num_gpus, data_dir, dataset,
     # declare an empty model graph
     with tf.Graph().as_default():
         # get batched dataset object and declare initializable iterator
-        distributed_dataset, specs = get_distributed_dataset(
-            total_batch_size, num_gpus, 1,
-            data_dir, dataset, image_size,
-            'test')
+        distributed_dataset, specs = dataset_utils.inputs(
+            dataset_name=dataset, total_batch_size=total_batch_size, num_gpus=num_gpus,
+            max_epochs=1, resized_size=image_size, data_dir=data_dir,
+            split='test')
         iterator = distributed_dataset.make_initializable_iterator()
         run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method, all_)
 
