@@ -36,5 +36,18 @@ class ExpTestTest(tf.test.TestCase):
              summary_dir='debug/summary/caps/svhn/Default/',
              load_test_path='debug/data/caps/svhn/test.npz')
 
+    """Test with FGSM"""
+    def testTestFGSMMNIST(self):
+        test(num_gpus=2, 
+             total_batch_size=200, image_size=28,
+             summary_dir='debug/summary/caps/mnist/Default/',
+             load_test_path='debug/data/caps/mnist/test_FGSM.npz')
+    
+    def testTestFGSMSVHN(self):
+        test(num_gpus=2,
+             total_batch_size=200, image_size=28,
+             summary_dir='debug/summary/caps/svhn/Default/',
+             load_test_path='debug/data/caps/svhn/test_FGSM.npz')
+
 if __name__ == '__main__':
     tf.test.main()
