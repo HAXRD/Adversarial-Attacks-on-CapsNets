@@ -45,6 +45,10 @@ def prepare_dataset(src_dir, out_dir):
     # train_x: (60000, 28, 28, 1), train_y: (60000,)
     # test_x:  (10000, 28, 28, 1), test_y:  (10000,)
 
+    """Convert image range into 0. ~ 1."""
+    train_x = train_x.astype(np.float32) * 1. / 255.
+    test_x = test_x.astype(np.float32) * 1. / 255.
+
     """Save datasets into npz files"""
     dataset_utils.save_to_npz(train_x, train_y, out_dir, 'train.npz')
     dataset_utils.save_to_npz(test_x, test_y, out_dir, 'test.npz')
@@ -72,8 +76,8 @@ def _single_process(image, label, specs, resized_size):
         if resized_size < specs['image_size']:
             image = tf.image.resize_image_with_crop_or_pad(
                 image, resized_size, resized_size)
-    # convert from 0 ~ 255 to 0. ~ 1.
-    image = tf.cast(image, tf.float32) * (1. / 255.)
+    # convert from to 0. ~ 1.
+    image = tf.cast(image, tf.float32)
 
     feature = {
         'image': image, 
@@ -115,7 +119,7 @@ def inputs(total_batch_size, num_gpus, max_epochs, resized_size,
     assert os.path.exists(os.path.join(data_dir, '{}.npz'.format(split))) == True
     with np.load(os.path.join(data_dir, '{}.npz'.format(split))) as f:
         x, y = f['x'], f['y']
-        # x: uint 8, 0 ~ 255
+        # x: float32, 0. ~ 1. 
         # y: uint 8, 0 ~ 9
     assert x.shape[0] == y.shape[0]
 
@@ -130,8 +134,8 @@ def inputs(total_batch_size, num_gpus, max_epochs, resized_size,
         'batch_size': int(total_batch_size / num_gpus),
         'max_epochs': int(max_epochs), # number of epochs to repeat
 
-        'image_size': 28,
-        'depth': 1,
+        'image_size': x.shape[1],
+        'depth': x.shape[3],
         'num_classes': 10
     }
 

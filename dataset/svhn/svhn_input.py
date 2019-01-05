@@ -61,8 +61,8 @@ def _single_process(image, label, specs, resized_size):
             # central cropping 
             image = tf.image.resize_image_with_crop_or_pad(
                 image, resized_size, resized_size)
-    # convert from 0 ~ 255 to 0. ~ 1.
-    image = tf.cast(image, tf.float32) * (1. / 255.)
+    # convert from to 0. ~ 1.
+    image = tf.cast(image, tf.float32)
 
     feature = {
         'image': image, 
@@ -84,7 +84,6 @@ def _feature_process(feature):
     }
     return batched_feature
 
-
 def inputs(total_batch_size, num_gpus, max_epochs, resized_size, 
            data_dir, split):
     """Construct inputs for mnist dataset.
@@ -105,7 +104,7 @@ def inputs(total_batch_size, num_gpus, max_epochs, resized_size,
     assert os.path.exists(os.path.join(data_dir, '{}.npz'.format(split))) == True
     with np.load(os.path.join(data_dir, '{}.npz'.format(split))) as f:
         x, y = f['x'], f['y']
-        # x: uint 8, 0 ~ 255
+        # x: float32, 0. ~ 1.
         # y: uint 8, 0 ~ 9
     assert x.shape[0] == y.shape[0]
 
@@ -120,8 +119,8 @@ def inputs(total_batch_size, num_gpus, max_epochs, resized_size,
         'batch_size': int(total_batch_size / num_gpus),
         'max_epochs': int(max_epochs),
 
-        'image_size': 32,
-        'depth': 3,
+        'image_size': x.shape[1],
+        'depth': x.shape[3],
         'num_classes': 10
     }
 
