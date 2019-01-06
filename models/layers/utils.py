@@ -43,15 +43,16 @@ def _margin_loss(labels, raw_logits, margin=0.4, downweight=0.5):
                                      tf.float32) * tf.pow(logits + margin, 2)
     return 0.5 * positive_cost + downweight * 0.5 * negative_cost
 
-def evaluate(logits, scope, loss_type):
+def evaluate(tower_idx, logits, scope, loss_type):
     """Calculates total loss and performance metrics.
 
     Args:
-        logits: tensor, model output.
-        scope: string, the scope name to collect losses of.
+        tower_idx: int, tower index;
+        logits: tensor, model output;
+        scope: string, the scope name to collect losses of;
         loss_type: string, 'softmax' or 'margin'.
     Returns:
-        total_loss: total loss of model.
+        total_loss: total loss of model;
         num_correct_per_batch: scalar, number of correct predictions per batch.
     """
     labels = tf.get_default_graph().get_tensor_by_name(scope + 'batched_labels:0') # 'tower_{i}/batched_labels:0'
@@ -63,6 +64,11 @@ def evaluate(logits, scope, loss_type):
             classification_loss = _margin_loss(labels=labels, raw_logits=logits)
         else:
             raise ValueError('No loss type found as {}'.format(loss_type))
+        tf.add_to_collection('tower_%d_classification_loss' % tower_idx, classification_loss)
+
+        # compute least-likely class loss
+        least_likely_class_loss = tf.reduce_min(logits, axis=1)
+        tf.add_to_collection('tower_%d_llc_loss', least_likely_class_loss)
 
         with tf.name_scope('total'): # 'tower_i/loss/total'
             batch_classification_loss = tf.reduce_mean(classification_loss)

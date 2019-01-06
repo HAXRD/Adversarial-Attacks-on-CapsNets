@@ -149,6 +149,7 @@ class Model(object):
                 inferred = self.build_replica(tower_idx)
                 # calculate the loss and number of correct predictions per batch
                 total_loss, num_correct_per_batch, accuracy = utils.evaluate(
+                    tower_idx=tower_idx,
                     logits=inferred.logits,
                     scope=scope,
                     loss_type=self._hparams.loss_type)
