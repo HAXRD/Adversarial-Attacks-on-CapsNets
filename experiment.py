@@ -379,6 +379,15 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method,
         else:
             total_iteration = all_
         
+        # compute xadv
+        xadvs = []
+        for i in range(specs['num_gpus']):
+            x = tf.get_collection('tower_%d_batched_images' % i)[0]
+            loss = tf.get_collection('tower_%d_loss' % i)[0]
+            xadv = ADVERSARIAL_METHOD[adversarial_method](loss, x)
+            xadvs.append(xadv)
+        xadv_concat = tf.concat(0, xadvs)
+
         for _ in range(total_iteration):
             start_anchor = time.time()
             try:
@@ -390,11 +399,10 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method,
                     y = tf.get_collection('tower_%d_batched_labels' % i)[0]
                     feed_dict[x] = batch_val['images']
                     feed_dict[y] = batch_val['labels']
-                    loss = tf.get_collection('tower_%d_loss' % i)[0]
-                    xadv = ADVERSARIAL_METHOD[adversarial_method](loss, x)
-                    adv_image = sess.run(xadv, feed_dict=feed_dict)
-                    adv_images.append(adv_image)
                     adv_labels.append(batch_val['labels'])
+                adv_image = sess.run(xadv_concat, feed_dict=feed_dict)
+                adv_images.append(adv_image)
+
                 counter += specs['num_gpus']
 
                 iteration_time = time.time() - start_anchor
