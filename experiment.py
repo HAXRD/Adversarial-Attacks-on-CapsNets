@@ -377,7 +377,7 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method,
         # compute adversarial tensor
         xs_advs = []
         for i in range(specs['num_gpus']):
-            xs_split = tf.get_collection('tower_%d_batched_images_split' % i)[0]
+            xs_split = [tf.get_collection('tower_%d_batched_images_split' % i)[j] for j in range(specs['batch_size'])]
             if adversarial_method == 'BIM':
                 loss = tf.get_collection('tower_%d_BIM_loss' % i)[0]
             elif adversarial_method == 'ILLCM':
