@@ -7,4 +7,4 @@
 
 source ~/tfp363/bin/activate
 
-python ~/Adversarial-Attack-on-CapsNets/experiment.py --data_dir=/home/xuc/Adversarial-Attack-on-CapsNets/data/caps/mnist/ --dataset=mnist --summary_dir=/home/xuc/Adversarial-Attack-on-CapsNets/summary/caps/mnist/ --model=caps --hparams_override=remake=false
+python ~/Adversarial-Attack-on-CapsNets/experiment.py --data_dir=/home/xuc/Adversarial-Attack-on-CapsNets/data/caps/mnist/ --dataset=mnist --summary_dir=/home/xuc/projects/def-sageev/xuc/AD/summary/caps/mnist/ --model=caps --hparams_override=remake=false

@@ -7,4 +7,4 @@
 
 source ~/tfp363/bin/activate
 
-python ~/Adversarial-Attack-on-CapsNets/experiment.py --data_dir=/home/xuc/Adversarial-Attack-on-CapsNets/data/caps_r/cifar10/ --dataset=cifar10 --summary_dir=/home/xuc/Adversarial-Attack-on-CapsNets/summary/caps_r/cifar10/ --model=caps 
+python ~/Adversarial-Attack-on-CapsNets/experiment.py --data_dir=/home/xuc/Adversarial-Attack-on-CapsNets/data/caps_r/cifar10/ --dataset=cifar10 --summary_dir=/home/xuc/projects/def-sageev/xuc/AD/summary/caps_r/cifar10/ --model=caps 

@@ -7,4 +7,4 @@
 
 source ~/tfp363/bin/activate
 
-python ~/Adversarial-Attack-on-CapsNets/experiment.py --data_dir=/home/xuc/Adversarial-Attack-on-CapsNets/data/cnn/fashion_mnist/ --dataset=fashion_mnist --summary_dir=/home/xuc/Adversarial-Attack-on-CapsNets/summary/cnn/fashion_mnist/ --model=cnn 
+python ~/Adversarial-Attack-on-CapsNets/experiment.py --data_dir=/home/xuc/Adversarial-Attack-on-CapsNets/data/cnn/fashion_mnist/ --dataset=fashion_mnist --summary_dir=/home/xuc/projects/def-sageev/xuc/AD/summary/cnn/fashion_mnist/ --model=cnn 
