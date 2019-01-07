@@ -61,11 +61,6 @@ MODELS = {
 import dataset.dataset_utils as dataset_utils
 
 import adversarial_noise
-ADVERSARIAL_METHOD = {
-    'FGSM': adversarial_noise.FGSM,
-    'BIM':  adversarial_noise.BIM,
-    'LLCM': adversarial_noise.LLCM
-}
 
 def find_event_file_path(load_dir):
     """Finds the event file.
@@ -379,15 +374,15 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method,
         else:
             total_iteration = all_
         
-        # compute xadv
-        xadvs = []
+        # compute adversarial tensor
+        xs_advs = []
         for i in range(specs['num_gpus']):
-            x = tf.get_collection('tower_%d_batched_images' % i)[0]
+            xs = tf.get_collection('tower_%d_batched_images' % i)[0]
             loss = tf.get_collection('tower_%d_loss' % i)[0]
-            xadv = ADVERSARIAL_METHOD[adversarial_method](loss, x)
-            xadvs.append(xadv)
-        xadv_concat = tf.concat(0, xadvs)
-
+            xs_adv = adversarial_noise.BIM(loss, xs, specs['batch_size'])
+            xs_advs.append(xs_adv)
+        xadv_concat = tf.concat(xs_advs, axis=0)
+        
         for _ in range(total_iteration):
             start_anchor = time.time()
             try:
