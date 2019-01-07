@@ -406,7 +406,7 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method,
                     adv_images.append(images)
                     adv_labels.append(labels)
 
-                counter += specs['num_gpus']
+                counter += specs['num_gpus']*specs['batch_size']
 
                 iteration_time = time.time() - start_anchor
                 total_time += iteration_time
