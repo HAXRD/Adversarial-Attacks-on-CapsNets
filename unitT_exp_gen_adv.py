@@ -28,7 +28,7 @@ class ExpGenAdvTest(tf.test.TestCase):
         gen_adv(num_gpus=2, data_dir='debug/data/caps/mnist/', dataset='mnist',
                 adversarial_method='FGSM',
                 total_batch_size=200, image_size=28,
-                summary_dir='debug/summary/caps/mnist/Default/', all_=2)
+                summary_dir='debug/summary/caps/mnist/Default/', eps=0.01, iteration_n=2, all_=2)
 
         with np.load(os.path.join('debug/data/caps/mnist/', 'test_FGSM.npz')) as f:
             images, labels = f['x'], f['y']
@@ -41,7 +41,7 @@ class ExpGenAdvTest(tf.test.TestCase):
         dataset='svhn',
                 adversarial_method='FGSM',
                 total_batch_size=2, image_size=28, 
-                summary_dir='debug/summary/caps/svhn/Default/', all_=2)
+                summary_dir='debug/summary/caps/svhn/Default/', eps=0.01, iteration_n=2, all_=2)
 
         with np.load(os.path.join('debug/data/caps/svhn/', 'test_FGSM.npz')) as f:
             images, labels = f['x'], f['y']
