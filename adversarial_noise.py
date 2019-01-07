@@ -76,14 +76,16 @@ def compute_one_step_adv(loss, xs_split, batch_size, eps=0.01, clip_min=0., clip
             shape [(1, 28, 28, 1), ...]
         batche_size: ?
     """
-    xs_split_cp = tf.identity(xs_split)
+    
     loss_split = tf.split(loss, num_or_size_splits=batch_size, axis=0)
 
+    xs_advs = []
     for k in range(batch_size):
         dy_dx = tf.gradients(loss_split[k], xs_split[k])[0]
-        xs_split_cp[k] = tf.stop_gradient(xs_split_cp[k] + eps * tf.sign(dy_dx))
-        xs_split_cp[k] = tf.clip_by_value(xs_split_cp[k], clip_min, clip_max)
+        xs_adv = tf.stop_gradient(xs_split[k] + eps * tf.sign(dy_dx))
+        xs_adv = tf.clip_by_value(xs_adv, clip_min, clip_max)
+        xs_advs.append(xs_adv)
 
-    xs_adv_out = tf.concat(xs_split_cp, axis=0)
+    xs_adv_out = tf.concat(xs_advs, axis=0)
 
     return xs_adv_out
