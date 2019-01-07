@@ -342,7 +342,8 @@ def test(num_gpus,
         iterator = distributed_dataset.make_initializable_iterator()
         run_test_session(iterator, specs, load_dir)
 
-def run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method, eps, iteration_n, all_):
+def run_gen_adv_session(iterator, specs, data_dir, load_dir, 
+                        adversarial_method, epsilon, iteration_n, all_):
 
     # find latest step, ckpt, and all step-ckpt pairs
     latest_step, latest_ckpt_path, _ = find_latest_ckpt_info(load_dir, True)
@@ -384,7 +385,7 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method,
                 loss = tf.get_collection('tower_%d_ILLCM_loss' % i)[0]
             # shape (100, 28, 28, 1)
             logger.info('Start computing gradients for {}...'.format(i))
-            xs_adv = adversarial_noise.compute_one_step_adv(loss, xs_split, specs['batch_size'], eps) 
+            xs_adv = adversarial_noise.compute_one_step_adv(loss, xs_split, specs['batch_size'], epsilon) 
             xs_advs.append(xs_adv) # [(100, 28, 28, 1), (100, 28, 28, 1)]
         
         for _ in range(total_iteration):
@@ -422,17 +423,19 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method,
             except tf.errors.OutOfRangeError:
                 break
         adv_images = np.concatenate(adv_images, axis=0)
+        adv_images = np.squeeze(adv_images, axis=1)
         adv_labels = np.concatenate(adv_labels, axis=0)
         adv_labels = np.argmax(adv_labels, axis=1)
-        fname = 'test_{}.npz'.format(adversarial_method)
+        fname = 'test_{}_eps{}_iter{}.npz'.format(
+            adversarial_method, epsilon, iteration_n)
         fpath = os.path.join(data_dir, fname)
         np.savez(fpath, x=adv_images, y=adv_labels)
         logger.info("{} saved to '{}'!".format(fname, fpath))
         
 def gen_adv(num_gpus, data_dir, dataset,
-            adversarial_method,
             total_batch_size, image_size,
-            summary_dir, eps=0.01, iteration_n=1, all_=None):
+            summary_dir, 
+            adversarial_method, epsilon=0.01, iteration_n=1, all_=None):
     # define path to ckpts
     load_dir = os.path.join(summary_dir, 'train')
     # declare an empty model graph
@@ -443,7 +446,7 @@ def gen_adv(num_gpus, data_dir, dataset,
             max_epochs=1, resized_size=image_size, data_dir=data_dir,
             split='test')
         iterator = distributed_dataset.make_initializable_iterator()
-        run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method, eps, iteration_n, all_)
+        run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method, epsilon, iteration_n, all_)
 
 def main(_):
     hparams = default_hparams()
@@ -457,9 +460,9 @@ def main(_):
                        FLAGS.summary_dir, FLAGS.save_epochs, FLAGS.max_epochs)
     elif FLAGS.mode == 'gen_adv':
         gen_adv(FLAGS.num_gpus, FLAGS.data_dir, FLAGS.dataset,
-                FLAGS.adversarial_method,
                 FLAGS.total_batch_size, FLAGS.image_size,
-                FLAGS.summary_dir, FLAGS.epsilon, FLAGS.iteration_n)
+                FLAGS.summary_dir, 
+                FLAGS.adversarial_method, FLAGS.epsilon, FLAGS.iteration_n)
     elif FLAGS.mode == 'test':
         test(FLAGS.num_gpus, 
              FLAGS.total_batch_size, FLAGS.image_size,
