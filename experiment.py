@@ -342,7 +342,7 @@ def test(num_gpus,
         iterator = distributed_dataset.make_initializable_iterator()
         run_test_session(iterator, specs, load_dir)
 
-def run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method, all_):
+def run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method, eps, iteration_n, all_):
 
     # find latest step, ckpt, and all step-ckpt pairs
     latest_step, latest_ckpt_path, _ = find_latest_ckpt_info(load_dir, True)
@@ -377,26 +377,34 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method,
         # compute adversarial tensor
         xs_advs = []
         for i in range(specs['num_gpus']):
-            xs = tf.get_collection('tower_%d_batched_images' % i)[0]
-            loss = tf.get_collection('tower_%d_classification_loss' % i)[0]
-            xs_adv = adversarial_noise.BIM(loss, xs, specs['batch_size'])
-            xs_advs.append(xs_adv)
-        xadv_concat = tf.concat(xs_advs, axis=0)
+            xs_split = tf.get_collection('tower_%d_batched_images_split' % i)[0]
+            if adversarial_method == 'BIM':
+                loss = tf.get_collection('tower_%d_BIM_loss' % i)[0]
+            elif adversarial_method == 'ILLCM':
+                loss = tf.get_collection('tower_%d_ILLCM_loss' % i)[0]
+            # shape (100, 28, 28, 1)
+            xs_adv = adversarial_noise.compute_one_step_adv(loss, xs_split, specs['batch_size'], eps) 
+            xs_advs.append(xs_adv) # [(100, 28, 28, 1), (100, 28, 28, 1)]
         
         for _ in range(total_iteration):
             start_anchor = time.time()
             try:
-                # get placeholders and create feed dict
-                feed_dict = {}
                 for i in range(specs['num_gpus']):
+                    feed_dict = {}
                     batch_val = sess.run(batch_data)
-                    x = tf.get_collection('tower_%d_batched_images' % i)[0]
-                    y = tf.get_collection('tower_%d_batched_labels' % i)[0]
-                    feed_dict[x] = batch_val['images']
-                    feed_dict[y] = batch_val['labels']
-                    adv_labels.append(batch_val['labels'])
-                adv_image = sess.run(xadv_concat, feed_dict=feed_dict)
-                adv_images.append(adv_image)
+                    images = batch_val['images'] # (100, 28, 28, 1)
+                    labels = batch_val['labels'] # (100,)
+
+                    x_t = tf.get_collection('tower_%d_batched_images' % i)[0]
+                    y_t = tf.get_collection('tower_%d_batched_labels' % i)[0]
+
+                    feed_dict[y_t] = labels
+                    for j in range(iteration_n):
+                        feed_dict[x_t] = images
+                        images = sess.run(xs_advs[i], feed_dict=feed_dict)
+                    
+                    adv_images.append(images)
+                    adv_labels.append(labels)
 
                 counter += specs['num_gpus']
 
@@ -424,7 +432,7 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method,
 def gen_adv(num_gpus, data_dir, dataset,
             adversarial_method,
             total_batch_size, image_size,
-            summary_dir, all_=None):
+            summary_dir, eps=0.01, iteration_n=1, all_=None):
     # define path to ckpts
     load_dir = os.path.join(summary_dir, 'train')
     # declare an empty model graph
@@ -435,7 +443,7 @@ def gen_adv(num_gpus, data_dir, dataset,
             max_epochs=1, resized_size=image_size, data_dir=data_dir,
             split='test')
         iterator = distributed_dataset.make_initializable_iterator()
-        run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method, all_)
+        run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method, eps, iteration_n, all_)
 
 def main(_):
     hparams = default_hparams()
@@ -451,7 +459,7 @@ def main(_):
         gen_adv(FLAGS.num_gpus, FLAGS.data_dir, FLAGS.dataset,
                 FLAGS.adversarial_method,
                 FLAGS.total_batch_size, FLAGS.image_size,
-                FLAGS.summary_dir)
+                FLAGS.summary_dir, FLAGS.epsilon, FLAGS.iteration_n)
     elif FLAGS.mode == 'test':
         test(FLAGS.num_gpus, 
              FLAGS.total_batch_size, FLAGS.image_size,

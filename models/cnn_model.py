@@ -91,7 +91,12 @@ class CNNModel(model.Model):
             shape=[None, image_size, image_size, image_depth], 
             name='batched_images')
         """visual"""
-        tf.add_to_collection('tower_%d_batched_images' % tower_idx, batched_images)
+        tf.add_to_collection('tower_%d_batched_images' % tower_idx, batched_images) # this is for batched_images input
+
+        batched_images_splits = tf.split(batched_images, num_or_size_splits=self._specs['batch_size'], axis=0) # this is for gradient computation
+        tf.add_to_collection('tower_%d_batched_images_split' % tower_idx, batched_images_splits)
+        
+        batched_images = tf.concat(batched_images_splits, axis=0) # convert back to normal
         batched_images = tf.transpose(batched_images, [0, 3, 1, 2])
         
         # Add convolutional layers

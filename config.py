@@ -53,6 +53,11 @@ tf.flags.DEFINE_string('summary_dir', './summary',
 tf.flags.DEFINE_string('load_test_path', None, 
                        'The (processed) test set file to load.')
 
+tf.flags.DEFINE_float('epsilon', 0.01,
+                      'epsilon for adversarial attacks.')
+tf.flags.DEFINE_integer('iteration_n', 1,
+                        'iteration number for iterative procedure.')
+
 def default_hparams():
     """Builds an HParams object with default hperparameters."""
     return tf.contrib.training.HParams(
