@@ -378,7 +378,7 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir, adversarial_method,
         xs_advs = []
         for i in range(specs['num_gpus']):
             xs = tf.get_collection('tower_%d_batched_images' % i)[0]
-            loss = tf.get_collection('tower_%d_loss' % i)[0]
+            loss = tf.get_collection('tower_%d_classification_loss' % i)[0]
             xs_adv = adversarial_noise.BIM(loss, xs, specs['batch_size'])
             xs_advs.append(xs_adv)
         xadv_concat = tf.concat(xs_advs, axis=0)

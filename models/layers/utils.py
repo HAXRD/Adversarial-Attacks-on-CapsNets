@@ -64,7 +64,8 @@ def evaluate(tower_idx, logits, scope, loss_type):
             classification_loss = _margin_loss(labels=labels, raw_logits=logits)
         else:
             raise ValueError('No loss type found as {}'.format(loss_type))
-        tf.add_to_collection('tower_%d_classification_loss' % tower_idx, classification_loss)
+        individual_classification_loss = tf.reduce_mean(classification_loss, axis=1)
+        tf.add_to_collection('tower_%d_classification_loss' % tower_idx, individual_classification_loss)
 
         # compute least-likely class loss
         least_likely_class_loss = tf.reduce_min(logits, axis=1)
