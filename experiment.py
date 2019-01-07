@@ -425,7 +425,6 @@ def gen_adv(num_gpus, data_dir, dataset,
             adversarial_method,
             total_batch_size, image_size,
             summary_dir, all_=None):
-    assert total_batch_size == num_gpus
     # define path to ckpts
     load_dir = os.path.join(summary_dir, 'train')
     # declare an empty model graph
