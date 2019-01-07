@@ -29,13 +29,13 @@ class ExpTrainTest(tf.test.TestCase):
     def testTrainMNIST(self):
         train(hparams, num_gpus=2, data_dir='debug/data/caps/mnist', dataset='mnist', 
                        adversarial_method='Default',
-                       model_type='caps', total_batch_size=200, image_size=28,
+                       model_type='caps', total_batch_size=10, image_size=28,
                        summary_dir='debug/summary/', save_epochs=1, max_epochs=1)
 
     def testTrainSVHN(self):
         train(hparams, num_gpus=2, data_dir='debug/data/caps/svhn', dataset='svhn', 
                        adversarial_method='Default',
-                       model_type='caps', total_batch_size=200, image_size=28,
+                       model_type='caps', total_batch_size=10, image_size=28,
                        summary_dir='debug/summary/', save_epochs=1, max_epochs=1)
 
 if __name__ == '__main__':
