@@ -26,7 +26,7 @@ class ExpGenAdvTest(tf.test.TestCase):
     """Generate adversarial exmaples"""
     def testGenAdvMNIST(self):
         gen_adv(num_gpus=2, data_dir='debug/data/caps/mnist/', dataset='mnist',
-                adversarial_method='FGSM',
+                adversarial_method='BIM',
                 total_batch_size=200, image_size=28,
                 summary_dir='debug/summary/caps/mnist/Default/', eps=0.01, iteration_n=2, all_=2)
 
@@ -39,7 +39,7 @@ class ExpGenAdvTest(tf.test.TestCase):
     def testGenAdvSVHN(self):
         gen_adv(num_gpus=2, data_dir='debug/data/caps/svhn',
         dataset='svhn',
-                adversarial_method='FGSM',
+                adversarial_method='BIM',
                 total_batch_size=2, image_size=28, 
                 summary_dir='debug/summary/caps/svhn/Default/', eps=0.01, iteration_n=2, all_=2)
 
