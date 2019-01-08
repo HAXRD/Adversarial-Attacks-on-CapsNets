@@ -27,14 +27,14 @@ class ExpTrainTest(tf.test.TestCase):
 
     """Train without adversarial training"""
     def testTrainMNIST(self):
-        train(hparams, num_gpus=2, data_dir='debug/data/caps/mnist', dataset='mnist', 
-                       adversarial_method='Default',
+        train(hparams, num_gpus=2, data_dir='debug/data/caps/mnist', dataset='mnist',
+                       adversarial_method='Default', epsilon=None, iteration_n=None,
                        model_type='caps', total_batch_size=10, image_size=28,
                        summary_dir='debug/summary/', save_epochs=1, max_epochs=1)
 
     def testTrainSVHN(self):
         train(hparams, num_gpus=2, data_dir='debug/data/caps/svhn', dataset='svhn', 
-                       adversarial_method='Default',
+                       adversarial_method='Default', epsilon=None, iteration_n=None,
                        model_type='caps', total_batch_size=10, image_size=28,
                        summary_dir='debug/summary/', save_epochs=1, max_epochs=1)
 

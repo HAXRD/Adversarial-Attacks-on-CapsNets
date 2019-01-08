@@ -26,9 +26,10 @@ class ExpGenAdvTest(tf.test.TestCase):
     """Generate adversarial exmaples"""
     def testGenAdvMNIST(self):
         gen_adv(num_gpus=2, data_dir='debug/data/caps/mnist/', dataset='mnist',
-                adversarial_method='BIM',
                 total_batch_size=10, image_size=28,
-                summary_dir='debug/summary/caps/mnist/Default/', eps=0.01, iteration_n=2, all_=2)
+                summary_dir='debug/summary/caps/mnist/Default/', 
+                adversarial_method='BIM', epsilon=0.01, iteration_n=2, all_=2)
+
 
         with np.load(os.path.join('debug/data/caps/mnist/', 'test_FGSM.npz')) as f:
             images, labels = f['x'], f['y']
@@ -37,11 +38,10 @@ class ExpGenAdvTest(tf.test.TestCase):
         self.assertEqual((4,), labels.shape)
 
     def testGenAdvSVHN(self):
-        gen_adv(num_gpus=2, data_dir='debug/data/caps/svhn',
-        dataset='svhn',
-                adversarial_method='BIM',
+        gen_adv(num_gpus=2, data_dir='debug/data/caps/svhn', dataset='svhn',
                 total_batch_size=10, image_size=28, 
-                summary_dir='debug/summary/caps/svhn/Default/', eps=0.01, iteration_n=2, all_=2)
+                summary_dir='debug/summary/caps/svhn/Default/',
+                adversarial_method='BIM', epsilon=0.01, iteration_n=2, all_=2)
 
         with np.load(os.path.join('debug/data/caps/svhn/', 'test_FGSM.npz')) as f:
             images, labels = f['x'], f['y']
