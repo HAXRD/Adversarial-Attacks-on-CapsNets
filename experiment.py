@@ -111,7 +111,7 @@ def extract_step(path):
     return int(file_name.split('-')[-1])
 
 def run_train_session(iterator, specs, 
-                      adversarial_method,
+                      adversarial_method, epsilon, iteration_n,
                       write_dir, max_epochs, 
                       joined_result, save_epochs):
     """Start session to train the model.
@@ -150,21 +150,42 @@ def run_train_session(iterator, specs,
             epochs_done = step_counter // specs['steps_per_epoch']
         total_steps = specs['steps_per_epoch'] * (max_epochs - epochs_done)
 
+        # compute adversarial tensor
+        if adversarial_method in ['BIM', 'ILLCM']:
+            xs_advs = []
+            for i in range(specs['num_gpus']):
+                xs_split = [tf.get_collection('tower_%d_batched_images_split' % i)[j] for j in range(specs['batch_size'])]
+                if adversarial_method == 'BIM':
+                    loss = tf.get_collection('tower_%d_BIM_loss' % i)[0]
+                elif adversarial_method == 'ILLCM':
+                    loss = tf.get_collection('tower_%d_ILLCM_loss' % i)[0]
+                # shape (100, 28, 28, 1)
+                logger.info('Start computing gradients for tower_{}...'.format(i))
+                xs_adv = adversarial_noise.compute_one_step_adv(loss, xs_split, specs['batch_size'], epsilon)
+                xs_advs.append(xs_adv) # [(100, 28, 28, 1), (100, 28, 28, 1)]
+
         # start feeding process
         for _ in range(total_steps):
             start_anchor = time.time()
             step_counter += 1
 
             try:
-                # get placeholders and create feed_dict
-                feed_dict = {}
                 for i in range(specs['num_gpus']):
+                    feed_dict = {}
                     batch_val = sess.run(batch_data)
-                    if adversarial_method != None:
-                        pass
-                        # batch_val = ADVERSARIAL_METHOD[adversarial_method](batch_val, loss, sess)
-                    feed_dict[tf.get_collection('tower_%d_batched_images' % i)[0]] = batch_val['images']
-                    feed_dict[tf.get_collection('tower_%d_batched_labels' % i)[0]] = batch_val['labels']
+                    images = batch_val['images']
+                    labels = batch_val['labels']
+                    
+                    x_t = tf.get_collection('tower_%d_batched_images' % i)[0]
+                    y_t = tf.get_collection('tower_%d_batched_labels' % i)[0]
+
+                    feed_dict[y_t] = labels
+                    if adversarial_method in ['BIM', 'ILLCM']:
+                        for j in range(iteration_n):
+                            feed_dict[x_t] = images
+                            images = sess.run(xs_advs[i], feed_dict=feed_dict)
+                    else:
+                        feed_dict[x_t] = images
                 
                 """Run inferences"""
                 summary, accuracy, _ = sess.run(
@@ -214,7 +235,7 @@ def run_train_session(iterator, specs,
             accuracy))
 
 def train(hparams, num_gpus, data_dir, dataset, 
-                   adversarial_method,
+                   adversarial_method, epsilon, iteration_n,
                    model_type, total_batch_size, image_size, 
                    summary_dir, save_epochs, max_epochs):
     """The function to train the model. One can specify the parameters 
@@ -226,6 +247,8 @@ def train(hparams, num_gpus, data_dir, dataset,
         data_dir: the directory containing the input data;
         dataset: the name of the dataset for the experiment;
         adversarial_method: method to generating adversarial examples;
+        epsilon: epsilon size for the adversarial procedure;
+        iteration_n: number of iterations to run the iterative process;
         model_type: the abbreviation of model architecture;
         total_batch_size: total batch size, which will be distributed to {num_gpus} GPUs;
         image_size: image size after cropping/resizing;
@@ -233,8 +256,13 @@ def train(hparams, num_gpus, data_dir, dataset,
         save_epochs: how often the model save the ckpt;
         max_epochs: maximum epochs to train;
     """
+    if adversarial_method == 'Default':
+        train_folder_name = 'train'
+    else:
+        train_folder_name = 'train_{}_eps{}_iter{}'.format(
+            adversarial_method, epsilon, iteration_n)
     # define subfolder in {summary_dir}, where we store the event and ckpt files.
-    write_dir = os.path.join(summary_dir, model_type, dataset, adversarial_method, 'train')
+    write_dir = os.path.join(summary_dir, model_type, dataset, adversarial_method, train_folder_name)
     # define model graph
     with tf.Graph().as_default():
         # get batched_dataset and declare initializable iterator
@@ -258,7 +286,7 @@ def train(hparams, num_gpus, data_dir, dataset,
         """"""
 
         run_train_session(iterator, specs, 
-                          adversarial_method,
+                          adversarial_method, epsilon, iteration_n,
                           write_dir, max_epochs, 
                           joined_result, save_epochs)
 
@@ -308,6 +336,7 @@ def run_test_session(iterator, specs, load_dir):
         print("overall accuracy: {}".format(mean_acc))
 
 def test(num_gpus, 
+         adversarial_method, epsilon, iteration_n,
          total_batch_size, image_size,
          summary_dir,
          load_test_path):
@@ -317,11 +346,18 @@ def test(num_gpus,
     
     Args:
         num_gpus: number of GPUs available to use;
+        adversarial_method: this set of parameters determines the summary folder to load;
+        epsilon: epsilon size for the adversarial procedure;
+        iteration_n: number of iterations to run the iterative process;
         total_batch_size: total batch size, which will be distributed to {num_gpus} GPUs;
         image_size: image size after cropping/resizing;
         summary_dir: the directory to write summaries and save the model;
         load_test_path: test set path to load.
     """
+    if adversarial_method == 'Default':
+        train_folder_name = 'train'
+    else:
+        train_folder_name = 'train_{}_eps{}_iter{}'.format(adversarial_method, epsilon, iteration_n)
     # define path to ckpts
     load_dir = os.path.join(summary_dir, 'train')
     # make sure target test file exists
@@ -344,7 +380,19 @@ def test(num_gpus,
 
 def run_gen_adv_session(iterator, specs, data_dir, load_dir, 
                         adversarial_method, epsilon, iteration_n, all_):
+    """Start session to generate adversarial examples with given
+    set and method parameters.
 
+    Args:
+        iterator: dataset object iterator;
+        specs: dict, specifications of the dataset object;
+        data_dir: str, data directory to load the npz file;
+        load_dir: str, summary directory to load ckpt files;
+        adversarial_method: method to generating adversarial examples;
+        epsilon: epsilon size for the adversarial procedure;
+        iteration_n: number of iterations to run the iterative process;
+        all_: an auxilary parameter for unitT.
+    """
     # find latest step, ckpt, and all step-ckpt pairs
     latest_step, latest_ckpt_path, _ = find_latest_ckpt_info(load_dir, True)
     if latest_step == -1 or latest_ckpt_path == None:
@@ -384,7 +432,7 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir,
             elif adversarial_method == 'ILLCM':
                 loss = tf.get_collection('tower_%d_ILLCM_loss' % i)[0]
             # shape (100, 28, 28, 1)
-            logger.info('Start computing gradients for {}...'.format(i))
+            logger.info('Start computing gradients for tower_{}...'.format(i))
             xs_adv = adversarial_noise.compute_one_step_adv(loss, xs_split, specs['batch_size'], epsilon) 
             xs_advs.append(xs_adv) # [(100, 28, 28, 1), (100, 28, 28, 1)]
         
@@ -436,6 +484,21 @@ def gen_adv(num_gpus, data_dir, dataset,
             total_batch_size, image_size,
             summary_dir, 
             adversarial_method, epsilon=0.01, iteration_n=1, all_=None):
+    """Generate adversarial examples with given set and method parameters.
+    
+    Args:
+        num_gpus: int, number of gpus available to use;
+        data_dir: str, data directory to load;
+        dataset: str, dataset name;
+        total_batch_size: int, total number of batch size, which will to evenly
+            divided into {num_gpus} partitions;
+        image_size: int, image size after resizing;
+        summary_dir: str, summary directory to load ckpt files;
+        adversarial_method: this set of parameters determines the summary folder to load;
+        epsilon: epsilon size for the adversarial procedure;
+        iteration_n: number of iterations to run the iterative process;
+        all_: an auxilary parameter for unitT.
+    """
     # define path to ckpts
     load_dir = os.path.join(summary_dir, 'train')
     # declare an empty model graph
@@ -455,7 +518,7 @@ def main(_):
     
     if FLAGS.mode == 'train':
         train(hparams, FLAGS.num_gpus, FLAGS.data_dir, FLAGS.dataset, 
-                       FLAGS.adversarial_method,
+                       FLAGS.adversarial_method, FLAGS.epsilon, FLAGS.iteration_n,
                        FLAGS.model, FLAGS.total_batch_size, FLAGS.image_size, 
                        FLAGS.summary_dir, FLAGS.save_epochs, FLAGS.max_epochs)
     elif FLAGS.mode == 'gen_adv':
@@ -465,6 +528,7 @@ def main(_):
                 FLAGS.adversarial_method, FLAGS.epsilon, FLAGS.iteration_n)
     elif FLAGS.mode == 'test':
         test(FLAGS.num_gpus, 
+             FLAGS.adversarial_method, FLAGS.epsilon, FLAGS.iteration_n,
              FLAGS.total_batch_size, FLAGS.image_size,
              FLAGS.summary_dir,
              FLAGS.load_test_path)
