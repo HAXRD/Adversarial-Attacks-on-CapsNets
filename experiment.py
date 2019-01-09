@@ -359,7 +359,7 @@ def test(num_gpus,
     else:
         train_folder_name = 'train_{}_eps{}_iter{}'.format(adversarial_method, epsilon, iteration_n)
     # define path to ckpts
-    load_dir = os.path.join(summary_dir, 'train')
+    load_dir = os.path.join(summary_dir, train_folder_name)
     # make sure target test file exists
     assert os.path.exists(load_test_path) == True
     assert os.path.isfile(load_test_path) == True
