@@ -436,6 +436,7 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir,
             xs_adv = adversarial_noise.compute_one_step_adv(loss, xs_split, specs['batch_size'], epsilon) 
             xs_advs.append(xs_adv) # [(100, 28, 28, 1), (100, 28, 28, 1)]
         
+        logger.info("Start generating adversarial examples...")
         for _ in range(total_iteration):
             start_anchor = time.time()
             try:
