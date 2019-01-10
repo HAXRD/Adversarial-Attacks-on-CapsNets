@@ -170,8 +170,8 @@ def run_train_session(iterator, specs,
             step_counter += 1
 
             try:
+                feed_dict = {}
                 for i in range(specs['num_gpus']):
-                    feed_dict = {}
                     batch_val = sess.run(batch_data)
                     images = batch_val['images']
                     labels = batch_val['labels']
