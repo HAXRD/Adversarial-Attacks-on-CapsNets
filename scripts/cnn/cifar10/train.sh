@@ -7,4 +7,4 @@
 
 source ~/tfp363/bin/activate
 
-python ~/Adversarial-Attack-on-CapsNets/experiment.py --data_dir=/home/xuc/Adversarial-Attack-on-CapsNets/data/cnn/cifar10/ --dataset=cifar10 --summary_dir=/home/xuc/projects/def-sageev/xuc/AD/summary/cnn/cifar10/ --model=cnn 
+python ~/Adversarial-Attack-on-CapsNets/experiment.py --data_dir=/home/xuc/Adversarial-Attack-on-CapsNets/data/cnn/cifar10/ --dataset=cifar10 --summary_dir=/home/xuc/projects/def-sageev/xuc/AD/summary/ --model=cnn 

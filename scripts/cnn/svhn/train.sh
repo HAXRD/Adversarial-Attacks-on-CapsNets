@@ -7,4 +7,4 @@
 
 source ~/tfp363/bin/activate
 
-python ~/Adversarial-Attack-on-CapsNets/experiment.py --data_dir=/home/xuc/Adversarial-Attack-on-CapsNets/data/cnn/svhn/ --dataset=svhn --summary_dir=/home/xuc/projects/def-sageev/xuc/AD/summary/cnn/svhn/ --model=cnn 
+python ~/Adversarial-Attack-on-CapsNets/experiment.py --data_dir=/home/xuc/Adversarial-Attack-on-CapsNets/data/cnn/svhn/ --dataset=svhn --summary_dir=/home/xuc/projects/def-sageev/xuc/AD/summary/ --model=cnn 
