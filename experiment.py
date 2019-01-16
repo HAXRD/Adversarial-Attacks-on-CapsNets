@@ -463,13 +463,13 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir,
                 iteration_time = time.time() - start_anchor
                 total_time += iteration_time
 
-                print("Finished {0}% ~ {1}/{2}, iteration: {3}s, total: {4}:{5}:{6}".format(
+                print("Finished {0}% ~ {1}/{2}, iteration: {3:.3f}s, total: {4}:{5}:{6}".format(
                     100 * float(counter) / float(specs['total_size']),
                     counter, specs['total_size'],
                     iteration_time,
                     int(total_time // 3600),
-                    int(total_time % 3600 //60),
-                    int(total_time % 3600)))
+                    int(total_time % 3600 // 60),
+                    int(total_time % 60)))
             except tf.errors.OutOfRangeError:
                 break
         adv_images = np.concatenate(adv_images, axis=0)
