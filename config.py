@@ -19,7 +19,7 @@ FLAGS = tf.flags.FLAGS
 
 tf.flags.DEFINE_integer('num_gpus', 2,
                         'Number of GPUs available.')
-tf.flags.DEFINE_integer('total_batch_size', 200,
+tf.flags.DEFINE_integer('total_batch_size', 80,
                         'The total batch size for each batch. It will be splitted into num_gpus partitions.')
 tf.flags.DEFINE_integer('save_epochs', 5,
                         'How often to save ckpt files.')
