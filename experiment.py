@@ -166,7 +166,7 @@ def run_train_session(iterator, specs,
                 xs_advs.append(xs_adv) # [(100, 28, 28, 1), (100, 28, 28, 1)]
 
         # start feeding process
-        for _ in range(total_steps):
+        for stp in range(total_steps):
             start_anchor = time.time()
             step_counter += 1
 
@@ -181,7 +181,7 @@ def run_train_session(iterator, specs,
                     y_t = tf.get_collection('tower_%d_batched_labels' % i)[0]
 
                     feed_dict[y_t] = labels
-                    if adversarial_method in ['BIM', 'ILLCM']:
+                    if adversarial_method in ['BIM', 'ILLCM'] and stp > total_steps-1-50:
                         for j in range(iteration_n):
                             feed_dict[x_t] = images
                             images = sess.run(xs_advs[i], feed_dict=feed_dict)
