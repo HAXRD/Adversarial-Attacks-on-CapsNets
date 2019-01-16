@@ -55,6 +55,7 @@ from models import capsule_model
 from models import cnn_model
 MODELS = {
     'caps': capsule_model.CapsuleModel,
+    'caps_r': capsule_model.CapsuleModel,
     'cnn': cnn_model.CNNModel
 }
 
