@@ -473,7 +473,6 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir,
             except tf.errors.OutOfRangeError:
                 break
         adv_images = np.concatenate(adv_images, axis=0)
-        adv_images = np.squeeze(adv_images, axis=1)
         adv_labels = np.concatenate(adv_labels, axis=0)
         adv_labels = np.argmax(adv_labels, axis=1)
         fname = 'test_{}_eps{}_iter{}.npz'.format(
