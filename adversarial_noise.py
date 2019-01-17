@@ -35,6 +35,22 @@ def compute_one_step_adv(loss, xs_split, batch_size, eps=0.01, clip_min=0., clip
     xs_advs = []
     for k in range(batch_size):
         dy_dx = tf.gradients(loss_split[k], xs_split[k])[0]
+        xs_adv = tf.stop_gradient(xs_split[k] + 1/255. * eps * tf.sign(dy_dx))
+        xs_adv = tf.clip_by_value(xs_adv, clip_min, clip_max)
+        xs_advs.append(xs_adv)
+        print("Done {}/{}...".format(k+1, batch_size), end='\r')
+    xs_adv_out = tf.concat(xs_advs, axis=0)
+
+    return xs_adv_out
+
+
+def compute_one_step_adv_avg(loss, xs_split, batch_size, eps=0.01, clip_min=0., clip_max=1.):
+    
+    avg_loss = tf.reduce_mean(loss, axis=0)
+
+    xs_advs = []
+    for k in range(batch_size):
+        dy_dx = tf.gradients(avg_loss, xs_split[k])[0]
         xs_adv = tf.stop_gradient(xs_split[k] + 1./255. * eps * tf.sign(dy_dx))
         xs_adv = tf.clip_by_value(xs_adv, clip_min, clip_max)
         xs_advs.append(xs_adv)

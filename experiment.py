@@ -162,7 +162,7 @@ def run_train_session(iterator, specs,
                     loss = tf.get_collection('tower_%d_ILLCM_loss' % i)[0]
                 # shape (100, 28, 28, 1)
                 logger.info('Start computing gradients for tower_{}...'.format(i))
-                xs_adv = adversarial_noise.compute_one_step_adv(loss, xs_split, specs['batch_size'], epsilon)
+                xs_adv = adversarial_noise.compute_one_step_adv_avg(loss, xs_split, specs['batch_size'], epsilon)
                 xs_advs.append(xs_adv) # [(100, 28, 28, 1), (100, 28, 28, 1)]
 
         # start feeding process
