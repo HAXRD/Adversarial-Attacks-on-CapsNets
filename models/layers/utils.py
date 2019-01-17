@@ -69,7 +69,7 @@ def evaluate(tower_idx, logits, scope, loss_type):
 
         # compute least-likely class loss
         least_likely_class_loss = tf.reduce_min(logits, axis=1)
-        tf.add_to_collection('tower_%d_ILLCM_loss', least_likely_class_loss)
+        tf.add_to_collection('tower_%d_ILLCM_loss' % tower_idx, least_likely_class_loss)
 
         with tf.name_scope('total'): # 'tower_i/loss/total'
             batch_classification_loss = tf.reduce_mean(classification_loss)
