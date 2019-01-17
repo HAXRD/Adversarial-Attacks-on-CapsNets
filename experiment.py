@@ -155,14 +155,14 @@ def run_train_session(iterator, specs,
         if adversarial_method in ['BIM', 'ILLCM']:
             xs_advs = []
             for i in range(specs['num_gpus']):
-                xs_split = [tf.get_collection('tower_%d_batched_images_split' % i)[j] for j in range(specs['batch_size'])]
+                xs = tf.get_collection('tower_%d_batched_images' % i)[0]
                 if adversarial_method == 'BIM':
                     loss = tf.get_collection('tower_%d_BIM_loss' % i)[0]
                 elif adversarial_method == 'ILLCM':
                     loss = tf.get_collection('tower_%d_ILLCM_loss' % i)[0]
                 # shape (100, 28, 28, 1)
                 logger.info('Start computing gradients for tower_{}...'.format(i))
-                xs_adv = adversarial_noise.compute_one_step_adv_avg(loss, xs_split, specs['batch_size'], epsilon)
+                xs_adv = adversarial_noise.compute_one_step_adv_avg(loss, xs, specs['batch_size'], epsilon)
                 xs_advs.append(xs_adv) # [(100, 28, 28, 1), (100, 28, 28, 1)]
 
         # start feeding process
