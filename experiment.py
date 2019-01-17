@@ -181,7 +181,7 @@ def run_train_session(iterator, specs,
                     y_t = tf.get_collection('tower_%d_batched_labels' % i)[0]
 
                     feed_dict[y_t] = labels
-                    if adversarial_method in ['BIM', 'ILLCM'] and stp > total_steps-(1+50)*specs['steps_per_epoch']:
+                    if adversarial_method in ['BIM', 'ILLCM'] and stp >= total_steps-(50)*specs['steps_per_epoch']:
                         for j in range(iteration_n):
                             feed_dict[x_t] = images
                             images = sess.run(xs_advs[i], feed_dict=feed_dict)
