@@ -67,7 +67,7 @@ def _single_process(image, label, specs, resized_size):
     if specs['split'] == 'train':
         # random cropping
         if resized_size < specs['image_size']:
-            image = tf.random_crop(image, [resized_size, resized_size])
+            image = tf.random_crop(image, [resized_size, resized_size, 1])
         # random rotation within -15° ~ 15°
         image = tf.contrib.image.rotate(
             image, random.uniform(-0.26179938779, 0.26179938779))
