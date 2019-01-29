@@ -26,7 +26,7 @@ tf.flags.DEFINE_integer('save_epochs', 5,
 tf.flags.DEFINE_integer('max_epochs', 500,
                         'train, evaluate, ensemble: maximum epochs to run;\n'
                         'others: number of different examples to viasualize.')
-tf.flags.DEFINE_integer('image_size', 28,
+tf.flags.DEFINE_integer('image_size', 24,
                         'Define the image size for dataset.')
 
 tf.flags.DEFINE_string('mode', 'train',
