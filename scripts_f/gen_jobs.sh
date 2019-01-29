@@ -1,3 +1,4 @@
+#!/bin/bash
 
 # Varaiables
 SCRIPTS_DIR=scripts_f
