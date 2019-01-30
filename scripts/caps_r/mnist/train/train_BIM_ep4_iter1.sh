@@ -9,7 +9,7 @@
 source ~/tfp363/bin/activate
 
 REPO_DIR=/home/xuc/Adversarial-Attack-on-CapsNets
-SUMMARY_DIR=/home/xuc/projects/def-sageev/xuc/summary/
+SUMMARY_DIR=/home/xuc/scratch/xuc/summary/
 
 MODEL=caps_r
 DATASET=mnist
