@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Varaiables
-SCRIPTS_DIR=scripts_f
+SCRIPTS_DIR=scripts
 MODE=train
 ######## $MODE clean ########
 # mnist 
