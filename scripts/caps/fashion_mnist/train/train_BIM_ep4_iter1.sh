@@ -2,7 +2,7 @@
 #SBATCH --gres=gpu:2        # request GPU "generic resource"
 #SBATCH --cpus-per-task=6   # maximum CPU cores per GPU request: 6 on Cedar, 16 on Graham.
 #SBATCH --mem=15000M        # memory per node
-#SBATCH --time=0-08:00      # time (DD-HH:MM)
+#SBATCH --time=0-16:00      # time (DD-HH:MM)
 #SBATCH --output=scripts_f/caps/fashion_mnist/train/o_train_BIM_ep4_iter1.out  # %N for node name, %j for jobID
 
 

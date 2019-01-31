@@ -19,14 +19,14 @@ FLAGS = tf.flags.FLAGS
 
 tf.flags.DEFINE_integer('num_gpus', 2,
                         'Number of GPUs available.')
-tf.flags.DEFINE_integer('total_batch_size', 80,
+tf.flags.DEFINE_integer('total_batch_size', 40,
                         'The total batch size for each batch. It will be splitted into num_gpus partitions.')
 tf.flags.DEFINE_integer('save_epochs', 25,
                         'How often to save ckpt files.')
 tf.flags.DEFINE_integer('max_epochs', 500,
                         'train, evaluate, ensemble: maximum epochs to run;\n'
                         'others: number of different examples to viasualize.')
-tf.flags.DEFINE_integer('image_size', 24,
+tf.flags.DEFINE_integer('image_size', 28,
                         'Define the image size for dataset.')
 
 tf.flags.DEFINE_string('mode', 'train',
