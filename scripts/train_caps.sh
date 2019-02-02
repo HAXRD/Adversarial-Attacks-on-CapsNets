@@ -23,7 +23,7 @@ do
     for dataset in "${datasets[@]}"
     do
         sbatch $SCRIPTS_DIR/$TYPE/$dataset/$MODE/$script_type.sh
-        echo "$TYPE/$dataset/$MODE/$script_type.sh"
+        echo "$SCRIPTS_DIR/$TYPE/$dataset/$MODE/o_$script_type.out"
     done
     echo ""
 done
