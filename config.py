@@ -23,7 +23,7 @@ tf.flags.DEFINE_integer('total_batch_size', 64,
                         'The total batch size for each batch. It will be splitted into num_gpus partitions.')
 tf.flags.DEFINE_integer('save_epochs', 25,
                         'How often to save ckpt files.')
-tf.flags.DEFINE_integer('max_epochs', 500,
+tf.flags.DEFINE_integer('max_epochs', 400,
                         'train, evaluate, ensemble: maximum epochs to run;\n'
                         'others: number of different examples to viasualize.')
 tf.flags.DEFINE_integer('image_size', 28,
