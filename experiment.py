@@ -323,15 +323,20 @@ def run_test_session(iterator, specs, load_dir):
 
         while True:
             try:
+                flag = [False for i in range(specs['num_gpus'])]
                 # get placeholders and create feed dict
                 feed_dict = {}
                 for i in range(specs['num_gpus']):
                     batch_val = sess.run(batch_data)
-                    feed_dict[tf.get_collection('tower_%d_batched_images' % i)[0]] = batch_val['images']
-                    feed_dict[tf.get_collection('tower_%d_batched_labels' % i)[0]] = batch_val['labels']
-                acc = sess.run(acc_t, feed_dict=feed_dict)
-                accs.append(acc)
-                print("accuracy: {}".format(acc))
+                    print(batch_val['images'].shape)
+                    if specs['batch_size'] == batch_val['images'].shape[0]:
+                        flag[i] = True
+                        feed_dict[tf.get_collection('tower_%d_batched_images' % i)[0]] = batch_val['images']
+                        feed_dict[tf.get_collection('tower_%d_batched_labels' % i)[0]] = batch_val['labels']
+                if all(flag):
+                    acc = sess.run(acc_t, feed_dict=feed_dict)
+                    accs.append(acc)
+                    print("accuracy: {}".format(acc))
             except tf.errors.OutOfRangeError:
                 break
         mean_acc = np.mean(accs)
