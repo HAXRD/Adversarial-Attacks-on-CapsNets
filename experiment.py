@@ -447,22 +447,28 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir,
         for _ in range(total_iteration):
             start_anchor = time.time()
             try:
+                flag = [False for i in range(specs['num_gpus'])]
                 for i in range(specs['num_gpus']):
                     feed_dict = {}
                     batch_val = sess.run(batch_data)
                     images = batch_val['images'] # (100, 28, 28, 1)
                     labels = batch_val['labels'] # (100,)
+                    if images.shape[0] == specs['batch_size']:
+                        flag[i] = True
+                        x_t = tf.get_collection('tower_%d_batched_images' % i)[0]
+                        y_t = tf.get_collection('tower_%d_batched_labels' % i)[0]
 
-                    x_t = tf.get_collection('tower_%d_batched_images' % i)[0]
-                    y_t = tf.get_collection('tower_%d_batched_labels' % i)[0]
-
-                    feed_dict[y_t] = labels
-                    for j in range(iteration_n):
-                        feed_dict[x_t] = images
-                        images = sess.run(xs_advs[i], feed_dict=feed_dict)
-                    
-                    adv_images.append(images)
-                    adv_labels.append(labels)
+                        feed_dict[y_t] = labels
+                        for j in range(iteration_n):
+                            feed_dict[x_t] = images
+                            images = sess.run(xs_advs[i], feed_dict=feed_dict)
+                        
+                        adv_images.append(images)
+                        adv_labels.append(labels)
+                if not all(flag):
+                    for i in range(specs['num_gpus']):
+                        adv_images.pop()
+                        adv_labels.pop()
 
                 counter += specs['num_gpus']*specs['batch_size']
 
