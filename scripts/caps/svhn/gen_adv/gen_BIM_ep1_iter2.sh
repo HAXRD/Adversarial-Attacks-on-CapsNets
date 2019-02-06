@@ -2,7 +2,7 @@
 #SBATCH --gres=gpu:2        # request GPU "generic resource"
 #SBATCH --cpus-per-task=6   # maximum CPU cores per GPU request: 6 on Cedar, 16 on Graham.
 #SBATCH --mem=15000M        # memory per node
-#SBATCH --time=0-03:00      # time (DD-HH:MM)
+#SBATCH --time=0-02:30      # time (DD-HH:MM)
 #SBATCH --output=scripts/caps/svhn/gen_adv/o_gen_BIM_ep1_iter2.out  # %N for node name, %j for jobID
 
 source ~/tfp363/bin/activate
