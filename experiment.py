@@ -488,7 +488,7 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir,
         adv_labels = np.concatenate(adv_labels, axis=0)
         adv_labels = np.argmax(adv_labels, axis=1)
         fname = 'test_{}_eps{}_iter{}.npz'.format(
-            adversarial_method, epsilon, iteration_n)
+            adversarial_method, int(epsilon), int(iteration_n))
         fpath = os.path.join(data_dir, fname)
         np.savez(fpath, x=adv_images, y=adv_labels)
         logger.info("{} saved to '{}'!".format(fname, fpath))
