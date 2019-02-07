@@ -3,14 +3,14 @@
 #SBATCH --cpus-per-task=6   # maximum CPU cores per GPU request: 6 on Cedar, 16 on Graham.
 #SBATCH --mem=15000M        # memory per node
 #SBATCH --time=0-00:40      # time (DD-HH:MM)
-#SBATCH --output=scripts/caps_r/cifar10/gen_adv/o_gen_BIM_ep4_iter1.out  # %N for node name, %j for jobID
+#SBATCH --output=scripts/cnn/cifar10/gen_adv/o_gen_BIM_ep4_iter1.out  # %N for node name, %j for jobID
 
 source ~/tfp363/bin/activate
 
 REPO_DIR=/home/xuc/Adversarial-Attack-on-CapsNets
 SUMMARY_DIR=/home/xuc/scratch/xuc/summary/
 
-MODEL=caps_r
+MODEL=cnn
 DATASET=cifar10
 
 ADVERSARIAL_METHOD=BIM 
