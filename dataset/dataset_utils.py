@@ -17,14 +17,10 @@ import numpy as np
 import os 
 
 import dataset.mnist.mnist_input as mnist_input
-import dataset.fashion_mnist.fashion_mnist_input as fashion_mnist_input
-import dataset.svhn.svhn_input as svhn_input
 import dataset.cifar10.cifar10_input as cifar10_input
 
 SINGLE_PROCESS = {
     'mnist': mnist_input._single_process,
-    'fashion_mnist': fashion_mnist_input._single_process,
-    'svhn': svhn_input._single_process,
     'cifar10': cifar10_input._single_process
 }
 
