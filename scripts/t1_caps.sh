@@ -5,7 +5,7 @@ SCRIPTS_DIR=scripts
 MODE=test-1-adv_in_f_clean_mdls
 TYPE=caps
 
-declare -a datasets=("mnist" "fashion_mnist" "svhn" "cifar10")
+declare -a datasets=("mnist" "cifar10")
 
 declare -a script_types=(
     "t1_BIM_ep4_iter1" "t1_BIM_ep8_iter1" "t1_BIM_ep16_iter1"

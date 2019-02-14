@@ -5,7 +5,7 @@ SCRIPTS_DIR=scripts
 MODE=train
 TYPE=caps_r
 
-declare -a datasets=("mnist" "fashion_mnist" "svhn" "cifar10")
+declare -a datasets=("mnist" "cifar10")
 
 declare -a script_types=(
     "train" 

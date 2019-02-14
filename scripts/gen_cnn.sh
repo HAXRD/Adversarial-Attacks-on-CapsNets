@@ -5,7 +5,7 @@ SCRIPTS_DIR=scripts
 MODE=gen_adv
 TYPE=cnn
 
-declare -a datasets=("mnist" "fashion_mnist" "svhn" "cifar10")
+declare -a datasets=("mnist" "cifar10")
 
 declare -a script_types=(
     "gen_BIM_ep4_iter1" "gen_BIM_ep8_iter1" "gen_BIM_ep16_iter1"
