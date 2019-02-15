@@ -1,32 +1,14 @@
-# Copyright 2018 Xu Chen All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
 import os
 import numpy as np 
 from scipy.io import loadmat
 
-def get_info(data_dir, split='train'):
-    """Get cifar10 filenames.
-
-    Args:
-        data_dir: data directory of where cifar10 was stored.
-        split: 'train' or 'test' split.
-    Returns:
-        filenames: a list of filenames of tfrecords.
+def _get_filesnames(data_dir, split='train'):
     """
-
-    """Aggregating the filenames"""
+    Gets all the cifar10 .mat file names from given directory.
+    :param data_dir: given directory of where the source file is stored
+    :param split: 'train' or 'test' split
+    :return: a list of absolute file paths to source files 
+    """
     if split == 'train':
         filenames = [
             os.path.join(data_dir, 'data_batch_%d.mat') % i
@@ -38,15 +20,15 @@ def get_info(data_dir, split='train'):
     return filenames
 
 def load_cifar10(data_dir, split='train'):
-    """Get cifar10 data.
-
-    Args:
-        data_dir: data directory of where cifar10 was stored.
-        split: 'train' or 'test' split.
-    Returns:
-        images, labels
     """
-    filenames = get_info(data_dir, split)
+    Implementation of Loading cifar10 dataset from separated .mat files.
+    :param data_dir: data direcotry of where cifar10 is stored
+    :param split: 'train' or 'test' split 
+    :return: images and labels in numpy array format,
+             where images - uint8, 0~255, (?, 32, 32, 3),
+                   labels - uint8, 0~9, (?, ) # TODO: type unsure
+    """
+    filenames = _get_filesnames(data_dir, split)
     
     images_list = []
     labels_list = []

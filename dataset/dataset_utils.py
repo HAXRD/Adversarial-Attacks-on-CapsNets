@@ -1,20 +1,12 @@
-# Copyright 2018 Xu Chen All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
-import tensorflow as tf 
-import numpy as np 
 import os 
+import numpy as np 
+import tensorflow as tf 
+
+import logging
+import daiquiri
+
+daiquiri.setup(level=logging.INFO)
+logger = daiquiri.getLogger(__name__)
 
 import dataset.mnist.mnist_input as mnist_input
 import dataset.cifar10.cifar10_input as cifar10_input
@@ -25,12 +17,12 @@ SINGLE_PROCESS = {
 }
 
 def _feature_process(feature):
-    """Map function to process batched data inside feature dictionary.
-
-    Args:
-        feature: a dictionary contains image, label.
-    Returns:
-        batched_feature: a dictionary contains images, labels.
+    """
+    Map function to process batched data inside feature dictionary.
+    :param feature: a dictionary contains an image and a label,
+                    where image, float32, 0.~1., (h, w, c)
+                          label, int32, 0~9, (,)
+    :return: a dictionary contains a batch of images and labels
     """
     batched_feature = {
         'images': feature['image'],
@@ -38,33 +30,29 @@ def _feature_process(feature):
     }
     return batched_feature
 
-
 def inputs(dataset_name, total_batch_size, num_gpus, max_epochs, resized_size, 
            data_dir, split):
-    """Construct inputs for mnist dataset.
-
-    Args:
-        dataset: dataset name;
-        total_batch_size: total number of images per batch;
-        num_gpus: number of GPUs available to use;
-        max_epochs: maximum number of repeats;
-        resized_size: image size after resizing;
-        data_dir: path to the dataset;
-        split: split set name after stripped out extension.
-    Returns:
-        batched_dataset: Dataset object, each instance is a feature dictionary;
-        specs: dataset specifications.
     """
-    
-    """Load data from npz files"""
-    assert os.path.exists(os.path.join(data_dir, '{}.npz'.format(split))) == True
+    A generalized implementation of input pipeline for different datasets.
+    :param dataset_name: the name of the dataset
+    :param total_batch_size: total number of instances per batch
+    :param num_gpus: number of GPUs available for computation distribution
+    :param max_epochs: maximum number of epochs to run
+    :param resize_size: image size after resizing
+    :param data_dir: directory to where the source data is installed
+    :param split: split set name after stripping out extension,
+                  this argument is not limited to 'train' and 'test',
+                  it can be other strings as well.
+    :return:
+        a dataset object, each instance is a feature dictionary
+        a dictionary contains dataset's specifications
+    """
+    logger.debug("CHECK - npz files: {}".format(
+        os.path.exists(os.path.join(data_dir, '{}.npz'.format(split))) == True))
+
     with np.load(os.path.join(data_dir, '{}.npz'.format(split))) as f:
         x, y = f['x'], f['y']
-        # x: float32, 0. ~ 1.
-        # y: uint 8, 0 ~ 9
-    assert x.shape[0] == y.shape[0]
 
-    """Define specs"""
     specs = {
         'split': split, 
         'total_size': int(x.shape[0]),
@@ -80,8 +68,7 @@ def inputs(dataset_name, total_batch_size, num_gpus, max_epochs, resized_size,
         'num_classes': 10
     }
 
-    """Process dataset object"""
-    dataset = tf.data.Dataset.from_tensor_slices((x, y)) # ((32, 32, 3), (,))
+    dataset = tf.data.Dataset.from_tensor_slices((x, y)) # ((h, w, c), (,))
     dataset = dataset.prefetch(
         buffer_size=specs['batch_size']*specs['num_gpus']*2)
     
