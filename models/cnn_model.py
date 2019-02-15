@@ -21,29 +21,25 @@ import tensorflow as tf
 from models import model
 from models.layers import variables
 
-
 class CNNModel(model.Model):
-    """A baseline multi GPU Model without capsule layers.
-
+    """
+    A baseline multi GPU Model without capsule layers.
     The inference graph includes ReLU convolution layers and fully connected
     layers. The last layer is linear and has 10 units.
     """
 
     def _add_convs(self, input_tensor, channels, tower_idx):
-        """Adds the convolution layers.
-
+        """
+        Adds the convolution layers.
         Adds a series of convolution layers with ReLU nonlinearity and pooling
         after each of them.
-
-        Args:
-            input_tensor: a 4D float tensor as the input to the first convolution.
-            channels: A list of channel sizes for input_tensor and following
-                convolution layers. Number of channels in input tensor should be
-                equal to channels[0].
-            tower_idx: the index number for this tower. Each tower is named
-                as tower_{tower_idx} and resides on gpu:{tower_idx}.
-        Returns:
-            A 4D tensor as the output of the last pooling layer.
+        :param input_tensor: a 4D tensor as the input to the first Conv layer
+        :param channels: a list of channel sizes for input_tensor and following
+                         conv layers. Number of channels in input tensor should 
+                         be equal to channels[0]
+        :param tower_idx: the index number for this tower. Each tower is named
+                          as tower_{tower_idx} and resides on 'gpu:{tower_idx}'
+        :return: a 4D tensor as the output of the last pooling layer
         """
         for i in range(1, len(channels)):
             with tf.variable_scope('conv{}'.format(i)) as scope:
@@ -69,17 +65,14 @@ class CNNModel(model.Model):
         return input_tensor
 
     def build_replica(self, tower_idx):
-        """Adds a replica graph ops.
-
+        """
+        Adds a replica graph ops.
         Builds the architecture of the neural net to derive logits from 
         batched_dataset. The inference graph defined here should involve 
         trainable variables otherwise the optimizer will raise a ValueError.
-
-        Args:
-            tower_idx: the index number for this tower. Each tower is named
-                as tower_{tower_idx} and resides on gpu:{tower_idx}.
-        Returns:
-            Inferred namedtuple containing (logits, None).
+        :param tower_idx: the index number for this tower. Each tower is named
+                          as tower_{tower_idx} and resides on 'gpu:{tower_idx}'
+        :return: an Inferred namedtuple contains (logits, None)
         """
         # Image specs
         image_size = self._specs['image_size']
@@ -90,14 +83,16 @@ class CNNModel(model.Model):
         batched_images = tf.placeholder(tf.float32, 
             shape=[None, image_size, image_size, image_depth], 
             name='batched_images')
-        """visual"""
-        tf.add_to_collection('tower_%d_batched_images' % tower_idx, batched_images) # this is for batched_images input
+        tf.add_to_collection(
+            'tower_%d_batched_images' % tower_idx, batched_images) #! visual
 
-        batched_images_splits = tf.split(batched_images, num_or_size_splits=self._specs['batch_size'], axis=0) # this is for gradient computation
+        batched_images_splits = tf.split(
+            batched_images, num_or_size_splits=self._specs['batch_size'], axis=0) 
         for i in range(self._specs['batch_size']):
-            tf.add_to_collection('tower_%d_batched_images_split' % tower_idx, batched_images_splits[i])
+            tf.add_to_collection(
+                'tower_%d_batched_images_split' % tower_idx, batched_images_splits[i])
         
-        batched_images = tf.concat(batched_images_splits, axis=0) # convert back to normal
+        batched_images = tf.concat(batched_images_splits, axis=0)
         batched_images = tf.transpose(batched_images, [0, 3, 1, 2])
         
         # Add convolutional layers
@@ -127,8 +122,7 @@ class CNNModel(model.Model):
         
         # Declare one-hot format placeholder for batched_labels
         batched_labels = tf.placeholder(tf.int32,
-            shape=[None, num_classes], name='batched_labels') # 'tower_i/batched_labels:0'
-        """visual"""
+            shape=[None, num_classes], name='batched_labels') 
         tf.add_to_collection('tower_%d_batched_labels' % tower_idx, batched_labels)
 
         return model.Inferred(logits, None)
