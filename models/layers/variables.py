@@ -20,15 +20,12 @@ from __future__ import print_function
 import tensorflow as tf
 
 def weight_variable(shape, stddev=0.1, verbose=False):
-	"""Creates a CPU variable with normal initialization. Adds summaries.
-
-	Args:
-		shape: list, the shape of the variable.
-		stddev: scalar, standard deviation for the initilizer.
-		verbose: if set add histograms.
-
-	Returns:
-		Weight variable tensor of shape=shape.
+	"""
+	Creates a CPU variable with normal initialization. Adds summaries.
+	:param shape: the shape of the variable
+	:param stddev: standard deviation for the initializer
+	:param verbose: whether to set add historams
+	:return: weight variable tensor of shape={shape}
 	"""
 	with tf.device('/cpu:0'):
 		with tf.name_scope('weights'):
@@ -43,14 +40,11 @@ def weight_variable(shape, stddev=0.1, verbose=False):
 
 
 def bias_variable(shape, verbose=False):
-	"""Creates a CPU variable with constant initialization. Adds summaries.
-
-	Args:
-		shape: list, the shape of the variable.
-		verbose: if set add histograms.
-
-	Returns:
-		Bias variable tensor with shape=shape.
+	"""
+	Creates a CPU variable with constant initialization. Adds summaries.
+	:param shape: the shape of the variable
+	:param verbose: whether to set add histograms
+	:return: bias variable tensor with shape={shape}
 	"""
 	with tf.device('/cpu:0'):
 		with tf.name_scope('biases'):
@@ -64,11 +58,10 @@ def bias_variable(shape, verbose=False):
 
 
 def variable_summaries(var, verbose):
-	"""Attaches a lot of summaries to a Tensor (for TensorBoard visualization).
-
-	Args:
-		var: tensor, statistic summaries of this tensor is added.
-		verbose: if set add histograms.
+	"""
+	Attaches a lot of summaries to a Tensor (for TensorBoard visualization).
+	:param var: statistic summaries of this tensor is added
+	:param verbose: whether to set add histograms
 	"""
 	if verbose:
 		with tf.name_scope('summaries'):

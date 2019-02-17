@@ -26,15 +26,13 @@ import tensorflow as tf
 from models.layers import variables
 
 def _squash(in_tensor):
-    """Applies (squash) to capsule layer.
-    
-    Args:
-        in_tensor: tensor, 
-            shape [batch, num_cap_types, num_atoms] for a fc capsule layer or
-            shape [batch, num_cap_types, num_atoms, h, w] for a convolutional 
-            capsule layer.
-    Returns:
-        A tensor with same shape
+    """
+    Applies (squash) to capsule layer.
+    :param in_tensor: tensor,
+                      [batch, num_cap_types, num_atoms] for a fc capsule layer or 
+                      [batch, num_cap_types, num_atoms, h, w] for a convolutional 
+                      capsule layer
+    :return: a tensor with same shape but squashed
     """
     with tf.name_scope('norm_non_linearity'):
         norm = tf.norm(in_tensor, axis=2, keepdims=True)
@@ -42,18 +40,15 @@ def _squash(in_tensor):
         return (in_tensor / norm) * (norm_squared / (1 + norm_squared))
 
 def _leaky_routing(logits, out_dim):
-    """Adds extra dimmension to routing logits.
-
+    """
+    Adds extra dimmension to routing logits.
     This enables active capsules to be routed to the extra dim if they are not a
     good fit for any of the capsules in the layer above.
-
-    Args:
-        logits: the original logits. shape (in_dim, out_dim) if fully connected. 
-            Otherwise, it has two more dimmensions.
-        out_dim:
-    
-    Returns:
-        routing probabilities for each pair of capsules. Same shape as logits.
+    :param logits: the original logits, shape [in_dim, out_dim] if fully connected,
+                   otherwise, it has two more dimmensions
+    :param out_dim: the dimension of output capsule
+    :return: routing probabilities for each pair of capsules, which has the same
+             shape as logits
     """
     leak = tf.zeros_like(logits, optimize=True)
     leak = tf.reduce_sum(leak, axis=2, keepdims=True)
@@ -61,28 +56,26 @@ def _leaky_routing(logits, out_dim):
     leaky_routing = tf.nn.softmax(leaky_logits, axis=2)
     return tf.split(leaky_routing, [1, out_dim], 2)[1]
 
-def _update_routing(tower_idx, votes, biases, logit_shape, num_ranks, in_dim, out_dim, reassemble, 
+def _update_routing(tower_idx, votes, biases, logit_shape, 
+                    num_ranks, in_dim, out_dim, reassemble, 
                     leaky, num_routing):
-    """Sums over scaled votes and applies squash to compute the activations.
-
+    """
+    Sums over scaled votes and applies squash to compute the activations.
     Iteratively updates routing logits (scales) based on the similarity between
     the activation of this layer and the votes of the layer below.
-
-    Args:
-        tower_idx: the index number for this tower. Each tower is named
-            as tower_{tower_idx} and resides on gpu:{tower_idx}.
-        votes: tensor, the transformed outputs of the layer below.
-        biases: tensor, bias variable.
-        logit_shape: tensor, shape of the logit to be initialized.
-        num_ranks: scalar, rank of the votes tensor. For fully connected capsule it
-            is 4, for convolutional capsule it is 6.
-        in_dim: scalar, number of capsule types of input.
-        out_dim: scalar, number of capsule types of output.
-        leaky: boolean, whether to use leaky routing.
-        num_routing: scalar, number of routing iterations.
-        reassemble: boolean, whether to use reassemble method.
-    Returns:
-        The activation tensor of the output layer after `num_routing` iterations.
+    :param tower_idx: the index number for this tower. Each tower is named as 
+                      tower_{tower_idx} and resides on gpu:{tower_idx}
+    :param votes: the transformed outputs of the layer below
+    :param biases: bias variable
+    :param logit_shape: shape of the logit to be initialized
+    :param num_ranks: rank of the votes tensor. For fully connected capsule it
+                      is 4, for convolutional capsule it is 6
+    :param in_dim: number of capsule types of input
+    :param out_dim: number of capsule types of output
+    :param leaky: whether to use leaky routing
+    :param num_routing: number of routing iterations
+    :param reassemble: whether to use reassemble method
+    :return: the activation tensor of the output layer after {num_routing} iterations
     """
     votes_t_shape = [3, 0, 1, 2]
     r_t_shape = [1, 2, 3, 0]
@@ -176,27 +169,24 @@ def _update_routing(tower_idx, votes, biases, logit_shape, num_ranks, in_dim, ou
 def _depthwise_conv3d(tower_idx, in_tensor, in_dim, in_atoms,
                       out_dim, out_atoms,
                       kernel, stride=2, padding='SAME'):
-    """Perform 2D convolution given a 5D input tensor.
-
+    """
+    Perform 2D convolution given a 5D input tensor.
     This layer given an input tensor of shape (batch, in_dim, in_atoms, in_h, in_w).
     We squeeze this first two dimmensions to get a 4R tensor as the input of 
     tf.nn.conv2d. Then splits the first dimmension and the last dimmension and 
     returns the 6R convolution output.
-    
-    Args:
-        tower_idx: the index number for this tower. Each tower is named
-            as tower_{tower_idx} and resides on gpu:{tower_idx}.
-        in_tensor: 5R tensor, last two dimmensions representing height and width.
-        in_dim: scalar, number of capsule types of input.
-        in_atoms: scalar, number of units of each input capsule.
-        out_dim: scalar, number of capsule types of output.
-        out_atoms: scalar, number of units of each output capsule.
-        kernel: tensor, convolutional kernel variable.
-        stride: scalar, stride of the convolutional kernel.
-        padding: 'SAME' or 'VALID', padding mechanism for convolutional kernels.
-    Returns: 
-        6R tensor output of a 2D convolution with shape (batch, in_dim, out_dim,
-        out_atoms, out_h, out_w), the covolution output shape and the input shape.
+    :param tower_idx: the index number for this tower. Each tower is named as 
+                      tower_{tower_idx} and resides on gpu:{tower_idx}
+    :param in_tensor: a 5D tensor, whose last two dimensions representing height and width
+    :param in_dim: number of capsule types of input
+    :param in_atoms: number of units of each input capsule
+    :param out_dim: number of capsule types of output
+    :param out_atoms: number of units of each output capsule 
+    :param kernel: convolutional kernel variable
+    :param stride: stride of the convolutional kernel
+    :param padding: 'SAME' or 'VALID', padding mechanism for convolutional kernels
+    :return: 6D tensor output of a 2D convolution with the shape of [batch, in_dim, out_dim,
+             out_atoms, out_h, out_w], the convolution output shape and input shape
     """
     with tf.name_scope('conv'):
         in_shape = tf.shape(in_tensor) # op
@@ -231,12 +221,11 @@ def conv_slim_capsule(tower_idx, in_tensor, in_dim, in_atoms,
                       kernel_size=5, stride=2, padding='SAME', 
                       reassemble=False,
                       **routing_args):
-    """Builds a slim convolutional capsule layer.
-
+    """
+    Builds a slim convolutional capsule layer.
     This layer performs 2D convolution given 5R input tensor of shape
     (batch, in_dim, in_atoms, in_h, in_w). Then refines the votes with 
     routing and applies Squash nonlinearity for each capsule.
-
     Each capsule in this layer is a convolutional unit and shares its kernel
     over its positional grid (e.g. 9x9) and different capsules below. Therefore,
     number of trainable variables in this layer is:
@@ -247,24 +236,21 @@ def conv_slim_capsule(tower_idx, in_tensor, in_dim, in_atoms,
     Output of a conv2d layer is a single capsule with channel number of atoms.
     Therefore conv_slim_capsule is suitable to be added on top of a conv2d layer
     with num_routing=1, in_dim=1 and in_atoms = conv_channels.
-
-    Args:
-        tower_idx: the index number for this tower. Each tower is named
-            as tower_{tower_idx} and resides on gpu:{tower_idx}.
-        in_tensor: 5R tensor, last two dimmensions representing height and width.
-        in_dim: scalar, number of capsule types of input.
-        in_atoms: scalar, number of units of each input capsule.
-        out_dim: scalar, number of capsule types of output.
-        out_atoms: scalar, number of units of each output capsule.
-        layer_name: string, name of this layer.
-        kernel_size: scalar: convolutional kernel size (kernel_size, kernel_size)
-        stride: scalar, stride of the convolutional kernel.
-        padding: 'SAME' or 'VALID', padding mechanism for convolutional kernels.
-        **routing_args: dictionary {leaky, num_routing}, args to be passed to the 
-            routing procedure.
-    Returns:
-        Tensor of activations for this layer of shape
-            (batch, out_dim, out_atoms, out_h, out_w).
+    :param tower_idx: the index number for this tower. Each tower is named as 
+                      tower_{tower_idx} and resides on gpu:{tower_idx}
+    :param in_tensor: 5D tensor, last two dimmensions representing height and width
+    :param in_dim: number of capsule types of input
+    :param in_atoms: number of units of each input capsule
+    :param out_dim: number of capsule types of output
+    :param out_atoms: number of units of each output capsule 
+    :param layer_name: name of this layer
+    :param kernel_size: convolutional kernel size [kernel_size, kernel_size]
+    :param stride: stride of the convolutional kernel
+    :param padding: 'SAME' or 'VALID', padding mechanism for convolutional kernels
+    :param **routing_args: dictionary {leaky, num_routing}, args to be passed to 
+                           the routing procedure
+    :return: tensor of activations for this layer of shape [batch, out_dim, out_atoms,
+             out_h, out_w]
     """
     with tf.variable_scope(layer_name):
         kernel = variables.weight_variable(
@@ -296,8 +282,8 @@ def capsule(tower_idx, in_tensor, in_dim, in_atoms,
             out_dim, out_atoms, layer_name,
             reassemble,
             **routing_args):
-    """Builds a fully connected capsule layer.
-
+    """
+    Builds a fully connected capsule layer.
     Given an input tensor of shape (batch, in_dim, in_atoms), this op
     performs the following:
 
@@ -312,16 +298,14 @@ def capsule(tower_idx, in_tensor, in_dim, in_atoms,
         kernel: (in_dim, in_atoms, out_dim * out_atoms)
         biases: (out_dim, out_atoms)
     
-    Args:
-        in_tensor: tensor, activation output of the layer below.
-        in_dim: scalar, number of capsule types in the layer below.
-        in_atoms: scalar, number of units of input capsule.
-        out_dim: scalar, number of capsule types in the output layer.
-        out_atoms: scalar, number of units of output capsule.
-        layer_name: string, the number of this layer.
-        **routing_args: dictionary {leaky, num_routing}, args for routing.
-    Returns:
-        Tensor of activations for this layer of shape (batch, out_dim, out_atoms).
+    :param in_tensor: 5D tensor, last two dimmensions representing height and width
+    :param in_dim: number of capsule types of input
+    :param in_atoms: number of units of each input capsule
+    :param out_dim: number of capsule types of output
+    :param out_atoms: number of units of each output capsule 
+    :param layer_name: name of this layer
+    :param **routing_args: dictionary {leaky, num_routing}, args for routing
+    :return tensor of activations for this layer of shape [batch, out_dim, out_atoms]
     """
     with tf.variable_scope(layer_name):
         weights = variables.weight_variable(
@@ -356,26 +340,23 @@ def capsule(tower_idx, in_tensor, in_dim, in_atoms,
     
 def reconstruction(capsule_mask, num_atoms, capsule_embedding, layer_sizes,
                    num_pixels, reuse, image, balance_factor):
-    """Adds the reconstruction loss and calculates the reconstructed image.
-
+    """
+    Adds the reconstruction loss and calculates the reconstructed image.
     Given the last capsule output layer as input of shape (batch, 10, num_atoms),
     add 3 fully connected layers on top of it.
     Feeds the masked output of the model to the reconstruction sub-network.
     Adds the difference with reconstruction image as reconstruction loss to the 
     loss collection.
-
-    Args:
-        capsule_mask: tensor, for each data in the batch it has the one hot 
-            encoding of the target id.
-        num_atoms: scalar, number of atoms in the given capsule_embedding.
-        capsule_embedding: tensor, output of the last capsule layer.
-        layer_sizes: (scalar, scalar), size of the first and second layer.
-        num_pixels: scalar, number of pixels in the target image.
-        reuse: if set reuse variables.
-        image: the reconstruction target image.
-        balance_factor: scalar, downweight the loss to be in valid range.
-    Returns:
-        The reconstruction images of shape (batch_size, num_pixels).
+    :param capsule_mask: for each intance in the batch it has the one-hot 
+                         encoding of the target id
+    :param num_atoms: number of atoms in the given capsule_embedding
+    :param capsule_embedding: output of the last capsule layer
+    :param layer_sizes: (scalar, scalar), size of the first and second layer
+    :param num_pixels: number of pixels in the target image
+    :param reuse: whether to set reuse variable
+    :param image: the reconstruction target image
+    :param balance_factor: downweight the loss to be in the valid range
+    :return: the reconstruction images of shape [batch_size, num_pixels]
     """
     first_layer_size, second_layer_size = layer_sizes
     capsule_mask_3d = tf.expand_dims(tf.cast(capsule_mask, tf.float32), -1)
