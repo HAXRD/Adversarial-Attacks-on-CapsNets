@@ -33,4 +33,4 @@ def init_unified_datasets(src_dir, out_dir):
                 created_dir)
 
 if __name__ == "__main__":
-    init_unified_datasets('dataset', '../scratch/data')
+    init_unified_datasets('dataset', 'data')
