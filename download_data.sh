@@ -2,7 +2,7 @@
 
 find . \( -name __pycache__ -o -name "*.pyc" \) -delete
 
-rm -rf data 
+rm -rf ../scratch/data 
 rm -rf summary
 
 rm -rf debug
