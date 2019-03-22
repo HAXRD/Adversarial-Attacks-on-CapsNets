@@ -20,20 +20,16 @@ from __future__ import print_function
 import tensorflow as tf 
 
 def _margin_loss(labels, raw_logits, margin=0.4, downweight=0.5):
-    """Penalizes deviations from margin for each logit.
-
+    """
+    Penalizes deviations from margin for each logit.
     Each wrong logit costs its distance to margin. For negative logits margin
     is 0.1 and for positives it is 0.9. First subtract 0.5 from all logits. 
     Now margin is 0.4 from each side.
-
-    Args:
-        labels: tensor, one hot encoding of ground truth.
-        raw_logits: tensor, model predictions in range [0, 1]
-        margin: scalar, the margin after subtracting 0.5 from raw_logits.
-        down_weight: scalar, the factor for negative cost.
-
-    Returns:
-        loss: tensor, total loss for each data point.
+    :param labels: one hot encoding of the ground truth
+    :param raw_logits: model predictions in range [0, 1]
+    :param margin: the margin after substracting 0.5 from raw_logits
+    :param down_weight: the factor for negative cost
+    :return: total loss for each instance
     """
     labels = tf.cast(labels, tf.float32)
     logits = raw_logits - 0.5
@@ -44,16 +40,14 @@ def _margin_loss(labels, raw_logits, margin=0.4, downweight=0.5):
     return 0.5 * positive_cost + downweight * 0.5 * negative_cost
 
 def evaluate(tower_idx, logits, scope, loss_type):
-    """Calculates total loss and performance metrics.
-
-    Args:
-        tower_idx: int, tower index;
-        logits: tensor, model output;
-        scope: string, the scope name to collect losses of;
-        loss_type: string, 'softmax' or 'margin'.
-    Returns:
-        total_loss: total loss of model;
-        num_correct_per_batch: scalar, number of correct predictions per batch.
+    """
+    Calculates total loss and performance metrics.
+    :param tower_idx: the index of the tower. Each tower is named as 
+                      tower_{tower_idx} and resides on gpu:{tower_idx}
+    :param logits: model output
+    :param scope: the scope name to collect losses of
+    :param loss_type: 'softmax' or 'margin'
+    :return: total_loss of model and number of correct predictions per batch
     """
     labels = tf.get_default_graph().get_tensor_by_name(scope + 'batched_labels:0') # 'tower_{i}/batched_labels:0'
     with tf.name_scope('loss'): # 'tower_i/loss'

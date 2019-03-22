@@ -64,12 +64,10 @@ import dataset.dataset_utils as dataset_utils
 import adversarial_noise
 
 def find_event_file_path(load_dir):
-    """Finds the event file.
-
-    Args:
-        load_dir: the directory to look for the training checkpoints.
-    Returns:
-        path to the event file.
+    """
+    Finds the event file. TODO: might remove it
+    :param load_dir: the directory to look for the training 
+    :return: path to event file
     """
     fpath_list = glob(os.path.join(load_dir, 'events.*'))
     if len(fpath_list) == 1:
@@ -78,12 +76,13 @@ def find_event_file_path(load_dir):
         raise ValueError
 
 def find_latest_ckpt_info(load_dir, find_all=False):
-    """Finds the latest checkpoint information.
-
-    Args:
-        load_dir: the directory to look for the training checkpoints.
-    Returns:
-        latest global step, latest checkpoint path, step_ckpt pair list
+    """
+    Finds the latest checkpoint information.
+    :param load_dir: the directory to look for the training ckpt files
+    :return: 
+        latest global step
+        latest ckpt path
+        step_ckpt pair list
     """
     ckpt = tf.train.get_checkpoint_state(load_dir)
     if ckpt and ckpt.model_checkpoint_path:
@@ -100,13 +99,11 @@ def find_latest_ckpt_info(load_dir, find_all=False):
     return -1, None, []
 
 def extract_step(path):
-    """Returns the step from the file format name of Tensorflow checkpoints.
-
-    Args:
-        path: The checkpoint path returned by tf.train.get_checkpoint_state.
-            The format is: {ckpnt_name}-{step}
-    Returns:
-        The last training step number of the checkpoint.
+    """
+    Returns the step from the file format name of Tensorflow checkpoints.
+    :param path: the ckpt path returned by tf.train.get_checkpoint_state,
+                 the format is {ckpt_name}-{step}
+    :return: the last training step number of the ckpt
     """
     file_name = os.path.basename(path)
     return int(file_name.split('-')[-1])
@@ -115,35 +112,35 @@ def run_train_session(iterator, specs,
                       adversarial_method, epsilon, iteration_n,
                       write_dir, max_epochs, 
                       joined_result, save_epochs):
-    """Start session to train the model.
-
-    Args:
-        iterator: dataset iterator;
-        specs: dict, dataset specifications;
-        adversarial_method: str, adversarial training method;
-        write_dir: summary directory to store the ckpts;
-        max_epochs: maximum epochs to train the model;
-        joined_results: a namedtuple that stores the related tensors;
-        save_epochs: how many epochs to store a ckpt.
+    """
+    Start session to train the model.
+    :param iterator: dataset iterator
+    :param specs: a dictionary contains specifications
+    :param adversarial_method: the adversarial training method
+    :param epsilon: epsilon value 
+    :param iteration_n: number of iteration for adversarial training procedure
+    :param write_dir: summary directory to store ckpts
+    :param max_epochs: maximum epochs to train the model
+    :param joined_results: a JoinedResult namedtuple that stores the related tensors
+    :param save_epochs: how often to store a ckpt
     """
     with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
-        # declare summary writer and save the graph in the meanwhile
         writer = tf.summary.FileWriter(write_dir, sess.graph)
-        # declare batched data instance and initialize the iterator
+
         batch_data = iterator.get_next()
         sess.run(iterator.initializer)
-        # initialize variables
+
         init_op = tf.group(tf.global_variables_initializer(),
                            tf.local_variables_initializer())
         sess.run(init_op)
-        # declare saver object for future saving
+
         saver = tf.train.Saver(max_to_keep=None)
 
         epoch_time = 0
         total_time = 0
         step_counter = 0
         epochs_done = 0
-        # restore ckpt if not restart
+        # Restore ckpt if not restart
         latest_step, latest_ckpt_fpath, _ = find_latest_ckpt_info(write_dir, False)
         if latest_step != -1 and latest_ckpt_fpath != None:
             saver.restore(sess, latest_ckpt_fpath)
@@ -151,7 +148,7 @@ def run_train_session(iterator, specs,
             epochs_done = step_counter // specs['steps_per_epoch']
         total_steps = specs['steps_per_epoch'] * (max_epochs - epochs_done)
 
-        # compute adversarial tensor
+        # Compute adversarial tensor
         if adversarial_method in ['BIM', 'ILLCM']:
             xs_advs = []
             for i in range(specs['num_gpus']):
@@ -165,7 +162,7 @@ def run_train_session(iterator, specs,
                 xs_adv = adversarial_noise.compute_one_step_adv_avg(loss, xs, specs['batch_size'], epsilon)
                 xs_advs.append(xs_adv) # [(100, 28, 28, 1), (100, 28, 28, 1)]
 
-        # start feeding process
+        # Start feeding process
         for stp in range(total_steps):
             start_anchor = time.time()
             step_counter += 1
@@ -182,24 +179,25 @@ def run_train_session(iterator, specs,
 
                     feed_dict[y_t] = labels
                     if adversarial_method in ['BIM', 'ILLCM'] and stp >= total_steps-(50)*specs['steps_per_epoch']:
+                    # if adversarial_method in ['BIM', 'ILLCM']:
                         for j in range(iteration_n):
                             feed_dict[x_t] = images
                             images = sess.run(xs_advs[i], feed_dict=feed_dict)
                     else:
                         feed_dict[x_t] = images
                 
-                """Run inferences"""
+                # Run inferences
                 summary, accuracy, _ = sess.run(
                     [joined_result.summary, joined_result.accuracy, joined_result.train_op], 
                     feed_dict=feed_dict)
                 
-                """Add summary"""
+                # Add summary
                 writer.add_summary(summary, global_step=step_counter)
-                # calculate time 
+                # Calculate time 
                 time_consuming = time.time() - start_anchor
                 epoch_time += time_consuming
                 total_time += time_consuming
-                """Save ckpts"""
+                # Save ckpts
                 if step_counter % (specs['steps_per_epoch'] * save_epochs) == 0:
                     ckpt_path = saver.save(
                         sess, os.path.join(write_dir, 'model.ckpt'),
@@ -239,40 +237,38 @@ def train(hparams, num_gpus, data_dir, dataset,
                    adversarial_method, epsilon, iteration_n,
                    model_type, total_batch_size, image_size, 
                    summary_dir, save_epochs, max_epochs):
-    """The function to train the model. One can specify the parameters 
+    """
+    The function to train the model. One can specify the parameters 
     to train different models, datasets, with/without adversarial training.
-
-    Args:
-        hparams: the hyperparameters to build the model graph;
-        num_gpus: number of GPUs to use;
-        data_dir: the directory containing the input data;
-        dataset: the name of the dataset for the experiment;
-        adversarial_method: method to generating adversarial examples;
-        epsilon: epsilon size for the adversarial procedure;
-        iteration_n: number of iterations to run the iterative process;
-        model_type: the abbreviation of model architecture;
-        total_batch_size: total batch size, which will be distributed to {num_gpus} GPUs;
-        image_size: image size after cropping/resizing;
-        summary_dir: the directory to write summaries and save the model;
-        save_epochs: how often the model save the ckpt;
-        max_epochs: maximum epochs to train;
+    :param hparams: the hyperparameters to build the model graph
+    :param num_gpus: number of GPUs to use
+    :param data_dir: the directory contains the input data
+    :param dataset: the name of the dataset for the experiment
+    :param adversarial_method: method to generating adversarial examples
+    :param epsilon: epsilon size for the adversarial precedure
+    :param iteration_n: number of iterations to run the iterative process
+    :param model_type: the abbreviation of model architecture type
+    :param total_batch_size: total batch size that will be distributed to {num_gpus} GPUs
+    :param image_size: image size after cropping/resizing
+    :param summary_dir: the directory to write summaries and save the model
+    :param save_epochs: how often the model save the ckpt file
+    :param max_epochs: maximum epochs to train
     """
     if adversarial_method == 'Default':
         train_folder_name = 'train'
     else:
         train_folder_name = 'train_{}_eps{}_iter{}'.format(
             adversarial_method, epsilon, iteration_n)
-    # define subfolder in {summary_dir}, where we store the event and ckpt files.
+    # Define subfolder in {summary_dir}, where we store the event and ckpt files.
     write_dir = os.path.join(summary_dir, model_type, dataset, adversarial_method, train_folder_name)
-    # define model graph
+    # Define model graph
     with tf.Graph().as_default():
-        # get batched_dataset and declare initializable iterator
         distributed_dataset, specs = dataset_utils.inputs(
             dataset_name=dataset, total_batch_size=total_batch_size, num_gpus=num_gpus,
             max_epochs=max_epochs, resized_size=image_size, data_dir=data_dir,
             split='train')
         iterator = distributed_dataset.make_initializable_iterator()
-        # initialize model with hparams and specs
+
         model = MODELS[model_type](hparams, specs)
         # build a model on multiple GPUs and returns a tuple of 
         # (a list of input tensor placeholders, a list of output
@@ -292,14 +288,13 @@ def train(hparams, num_gpus, data_dir, dataset,
                           joined_result, save_epochs)
 
 def run_test_session(iterator, specs, load_dir):
-    """Load available ckpts and test accuracy.
-
-    Args:
-        iterator: dataset iterator;
-        specs: dict, dataset specifications;
-        load_dir: str, directory to store ckpts;
     """
-    # find latest step, ckpt, and all step-ckpt pairs
+    Load available ckpts and test accuracy.
+    :param iterator: dataset iterator
+    :param specs: a dictionary contains dataset specifications
+    :param load_dir: the directory to store ckpt files
+    """
+    # Find latest step, ckpt, and all step-ckpt pairs
     latest_step, latest_ckpt_path, _ = find_latest_ckpt_info(load_dir, True)
     if latest_step == -1 or latest_ckpt_path == None:
         raise ValueError('{0}\n ckpt files not fould!\n {0}'.format('='*20))
@@ -308,12 +303,9 @@ def run_test_session(iterator, specs, load_dir):
         latest_ckpt_meta_path = latest_ckpt_path + '.meta'
 
     with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
-        # import compute graph
         saver = tf.train.import_meta_graph(latest_ckpt_meta_path)
-        # get dataset object working 
         batch_data = iterator.get_next()
 
-        # restore variables
         saver.restore(sess, latest_ckpt_path)
         sess.run(iterator.initializer)
 
@@ -322,15 +314,19 @@ def run_test_session(iterator, specs, load_dir):
 
         while True:
             try:
-                # get placeholders and create feed dict
+                flag = [False for i in range(specs['num_gpus'])]
                 feed_dict = {}
                 for i in range(specs['num_gpus']):
                     batch_val = sess.run(batch_data)
-                    feed_dict[tf.get_collection('tower_%d_batched_images' % i)[0]] = batch_val['images']
-                    feed_dict[tf.get_collection('tower_%d_batched_labels' % i)[0]] = batch_val['labels']
-                acc = sess.run(acc_t, feed_dict=feed_dict)
-                accs.append(acc)
-                print("accuracy: {}".format(acc))
+                    print(batch_val['images'].shape)
+                    if specs['batch_size'] == batch_val['images'].shape[0]:
+                        flag[i] = True
+                        feed_dict[tf.get_collection('tower_%d_batched_images' % i)[0]] = batch_val['images']
+                        feed_dict[tf.get_collection('tower_%d_batched_labels' % i)[0]] = batch_val['labels']
+                if all(flag):
+                    acc = sess.run(acc_t, feed_dict=feed_dict)
+                    accs.append(acc)
+                    print("accuracy: {}".format(acc))
             except tf.errors.OutOfRangeError:
                 break
         mean_acc = np.mean(accs)
@@ -341,27 +337,26 @@ def test(num_gpus,
          total_batch_size, image_size,
          summary_dir,
          load_test_path):
-    """The function to test the model. One can specify the parameters 
+    """
+    The function to test the model. One can specify the parameters 
     to test different models, datasets, with/without adversarially
     trained model.
-    
-    Args:
-        num_gpus: number of GPUs available to use;
-        adversarial_method: this set of parameters determines the summary folder to load;
-        epsilon: epsilon size for the adversarial procedure;
-        iteration_n: number of iterations to run the iterative process;
-        total_batch_size: total batch size, which will be distributed to {num_gpus} GPUs;
-        image_size: image size after cropping/resizing;
-        summary_dir: the directory to write summaries and save the model;
-        load_test_path: test set path to load.
+    :param num_gpus: number of GPUs available to use
+    :param adversarial_method: this set of parameters determines the 
+                               summary folder to load
+    :param epsilon: epsilon size for the adversarial procedure
+    :param iteration_n: number of iterations to run the iterative process
+    :param total_batch_size: total batch size that will be distributed to {num_gpus} GPUs;
+    :param image_size: image size after cropping/resizing
+    :param summary_dir: the directory to write summaries and save the model
+    :param load_test_path: test set path to load
     """
     if adversarial_method == 'Default':
         train_folder_name = 'train'
     else:
         train_folder_name = 'train_{}_eps{}_iter{}'.format(adversarial_method, epsilon, iteration_n)
-    # define path to ckpts
+    # Define path to ckpts
     load_dir = os.path.join(summary_dir, train_folder_name)
-    # make sure target test file exists
     assert os.path.exists(load_test_path) == True
     assert os.path.isfile(load_test_path) == True
 
@@ -369,7 +364,7 @@ def test(num_gpus,
     dataset = os.path.basename(os.path.dirname(load_test_path))
     data_dir = os.path.dirname(load_test_path)
 
-    # declare an empty model graph
+    # Declare an empty model graph
     with tf.Graph().as_default():
         # get batched dataset and declare initializable iterator
         distributed_dataset, specs = dataset_utils.inputs(
@@ -381,20 +376,19 @@ def test(num_gpus,
 
 def run_gen_adv_session(iterator, specs, data_dir, load_dir, 
                         adversarial_method, epsilon, iteration_n, all_):
-    """Start session to generate adversarial examples with given
-    set and method parameters.
-
-    Args:
-        iterator: dataset object iterator;
-        specs: dict, specifications of the dataset object;
-        data_dir: str, data directory to load the npz file;
-        load_dir: str, summary directory to load ckpt files;
-        adversarial_method: method to generating adversarial examples;
-        epsilon: epsilon size for the adversarial procedure;
-        iteration_n: number of iterations to run the iterative process;
-        all_: an auxilary parameter for unitT.
     """
-    # find latest step, ckpt, and all step-ckpt pairs
+    Start session to generate adversarial examples with given
+    set and method parameters.
+    :param iterator: dataset iterator
+    :param specs: a dictionary that contains dataset specification
+    :param data_dir: data directory to load .npz file 
+    :param load_dir: summary directory to load ckpt files
+    :param adversarial_method: method to generating adversarial examples
+    :param epsilon: epsilon size for the adversarial procedure
+    :param iteration_n: number of iterations to run the iterative process
+    :param all_: an auxilary parameter for unitT
+    """
+    # Find latest step, ckpt, and all step-ckpt pairs
     latest_step, latest_ckpt_path, _ = find_latest_ckpt_info(load_dir, True)
     if latest_step == -1 or latest_ckpt_path == None:
         raise ValueError('{0}\n ckpt files not fould!\n {0}'.format('='*20))
@@ -403,12 +397,9 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir,
         latest_ckpt_meta_path = latest_ckpt_path + '.meta'
 
     with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
-        # import compute graph
         saver = tf.train.import_meta_graph(latest_ckpt_meta_path)
-        # get dataset object 
         batch_data = iterator.get_next()
 
-        # restore variables
         saver.restore(sess, latest_ckpt_path)
         sess.run(iterator.initializer)
 
@@ -424,7 +415,7 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir,
         else:
             total_iteration = all_
         
-        # compute adversarial tensor
+        # Compute adversarial tensor
         xs_advs = []
         for i in range(specs['num_gpus']):
             xs_split = [tf.get_collection('tower_%d_batched_images_split' % i)[j] for j in range(specs['batch_size'])]
@@ -441,22 +432,28 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir,
         for _ in range(total_iteration):
             start_anchor = time.time()
             try:
+                flag = [False for i in range(specs['num_gpus'])]
                 for i in range(specs['num_gpus']):
                     feed_dict = {}
                     batch_val = sess.run(batch_data)
                     images = batch_val['images'] # (100, 28, 28, 1)
                     labels = batch_val['labels'] # (100,)
+                    if images.shape[0] == specs['batch_size']:
+                        flag[i] = True
+                        x_t = tf.get_collection('tower_%d_batched_images' % i)[0]
+                        y_t = tf.get_collection('tower_%d_batched_labels' % i)[0]
 
-                    x_t = tf.get_collection('tower_%d_batched_images' % i)[0]
-                    y_t = tf.get_collection('tower_%d_batched_labels' % i)[0]
-
-                    feed_dict[y_t] = labels
-                    for j in range(iteration_n):
-                        feed_dict[x_t] = images
-                        images = sess.run(xs_advs[i], feed_dict=feed_dict)
-                    
-                    adv_images.append(images)
-                    adv_labels.append(labels)
+                        feed_dict[y_t] = labels
+                        for j in range(iteration_n):
+                            feed_dict[x_t] = images
+                            images = sess.run(xs_advs[i], feed_dict=feed_dict)
+                        
+                        adv_images.append(images)
+                        adv_labels.append(labels)
+                if not all(flag):
+                    for i in range(specs['num_gpus']):
+                        adv_images.pop()
+                        adv_labels.pop()
 
                 counter += specs['num_gpus']*specs['batch_size']
 
@@ -476,7 +473,7 @@ def run_gen_adv_session(iterator, specs, data_dir, load_dir,
         adv_labels = np.concatenate(adv_labels, axis=0)
         adv_labels = np.argmax(adv_labels, axis=1)
         fname = 'test_{}_eps{}_iter{}.npz'.format(
-            adversarial_method, epsilon, iteration_n)
+            adversarial_method, int(epsilon), int(iteration_n))
         fpath = os.path.join(data_dir, fname)
         np.savez(fpath, x=adv_images, y=adv_labels)
         logger.info("{} saved to '{}'!".format(fname, fpath))
@@ -485,20 +482,20 @@ def gen_adv(num_gpus, data_dir, dataset,
             total_batch_size, image_size,
             summary_dir, 
             adversarial_method, epsilon=0.01, iteration_n=1, all_=None):
-    """Generate adversarial examples with given set and method parameters.
-    
-    Args:
-        num_gpus: int, number of gpus available to use;
-        data_dir: str, data directory to load;
-        dataset: str, dataset name;
-        total_batch_size: int, total number of batch size, which will to evenly
-            divided into {num_gpus} partitions;
-        image_size: int, image size after resizing;
-        summary_dir: str, summary directory to load ckpt files;
-        adversarial_method: this set of parameters determines the summary folder to load;
-        epsilon: epsilon size for the adversarial procedure;
-        iteration_n: number of iterations to run the iterative process;
-        all_: an auxilary parameter for unitT.
+    """
+    Generate adversarial examples with given set and method parameters.
+    :param num_gpus: number of GPUs available to use 
+    :param data_dir: data directory to load 
+    :param dataset: dataset name 
+    :param total_batch_size: total number of batch size, which will 
+                             evenly divided into {num_gpus} partitions
+    :param image_size: image size after resizing
+    :param summary_dir: summary directory to load ckpt files
+    :param adversarial_method: this set of parameters determines the 
+                               summary folder to load
+    :param epsilon: epsilon size for the adversarial procedure
+    :param iteration_n: number of iterations to run the iterative process
+    :param all_:an auxilary parameter for unitT
     """
     # define path to ckpts
     load_dir = os.path.join(summary_dir, 'train')

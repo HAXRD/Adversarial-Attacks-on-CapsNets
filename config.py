@@ -19,11 +19,11 @@ FLAGS = tf.flags.FLAGS
 
 tf.flags.DEFINE_integer('num_gpus', 2,
                         'Number of GPUs available.')
-tf.flags.DEFINE_integer('total_batch_size', 80,
+tf.flags.DEFINE_integer('total_batch_size', 64,
                         'The total batch size for each batch. It will be splitted into num_gpus partitions.')
-tf.flags.DEFINE_integer('save_epochs', 5,
+tf.flags.DEFINE_integer('save_epochs', 25,
                         'How often to save ckpt files.')
-tf.flags.DEFINE_integer('max_epochs', 500,
+tf.flags.DEFINE_integer('max_epochs', 400,
                         'train, evaluate, ensemble: maximum epochs to run;\n'
                         'others: number of different examples to viasualize.')
 tf.flags.DEFINE_integer('image_size', 28,
@@ -53,7 +53,7 @@ tf.flags.DEFINE_string('summary_dir', './summary',
 tf.flags.DEFINE_string('load_test_path', None, 
                        'The (processed) test set file to load.')
 
-tf.flags.DEFINE_float('epsilon', 0.01,
+tf.flags.DEFINE_float('epsilon', 1,
                       'epsilon for adversarial attacks.')
 tf.flags.DEFINE_integer('iteration_n', 1,
                         'iteration number for iterative procedure.')

@@ -18,16 +18,13 @@
 import tensorflow as tf 
 
 def compute_one_step_adv(loss, xs_split, batch_size, eps=0.01, clip_min=0., clip_max=1.):
-    """This function receives a tensor: {loss} and a list of tensor: {xs_split}
+    """
+    This function receives a tensor: {loss} and a list of tensor: {xs_split}
     as input. Then we split {loss} into {batch_size} splits and compute one-step
     adversarial procedure.
-
-    Args:
-        loss: corresponding loss function, cross_entropy, margin, least-likely class
-            shape (?,)
-        xs_split: input batched images tensor, 
-            shape [(1, 28, 28, 1), ...]
-        batche_size: ?
+    :param loss: corresponding loss function, (?,)
+    :param xs_split: input batched images tensor, [(1, h, w, 1), ...] 
+    :param batch_size: ? 
     """
     
     loss_split = tf.split(loss, num_or_size_splits=batch_size, axis=0)

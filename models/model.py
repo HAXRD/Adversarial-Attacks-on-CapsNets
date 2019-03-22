@@ -14,7 +14,9 @@
 # limitations under the License.
 # ==============================================================================
 
-from __future__ import absolute_import, division, print_function
+from __future__ import print_function
+from __future__ import division
+from __future__ import absolute_import
 
 import abc 
 import collections
@@ -29,20 +31,21 @@ JoinedResult = collections.namedtuple('JoinedResult',
                                      ('summary', 'train_op', 'correct', 'accuracy', 'total_loss'))
 
 class Model(object):
-    """Base class for building a model and running inference on it."""
+    """
+    Base class for building a model and running inference on it.
+    """
 
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, hparams, dataset_specs):
-        """Initializes the model parameters.
-        
-        Args:
-            hparams: The hyperparameters for the model as 
-                tf.contrib.train.HParams.
-            dataset_spec: Specifications of the dataset, including
-                `split`, `max_epochs`, `total_batch_size`, `num_gpus`,
-                `num_gpus`, `image_dim`, `depth`, 
-                `num_classes`, `total_size`, `steps_per_epoch`.
+        """
+        Initializes the model parameters.
+        :param hparams: the hyperparameters for the model as 
+                        tf.contrib.train.HParams
+        :param dataset_specs: dataset specifications, including
+                              'split', 'total_size', 'total_batch_size', 
+                              'steps_per_epoch', 'num_gpus', 'batch_size',
+                              'max_epochs', 'image_size', 'depth', 'num_classes'
         """
         self._hparams = hparams
         self._specs = dataset_specs
@@ -62,14 +65,13 @@ class Model(object):
             self._optimizer = tf.train.AdamOptimizer(learning_rate)
     
     def _average_gradients(self, tower_grads):
-        """Calculate the average gradient for each variable across all towers.
-
-        Args:
-            tower_grads: a list of gradient lists for each tower. Each gradient list
-                is a list of (gradient, variable) tuples for all variables.
-        Returns:
-            A list of pairs of (gradient, variable) where gradient has been averaged 
-            across all towers.
+        """
+        Calculate the average gradient for each variable across all towers.
+        :param tower_grads: a list of gradient lists for each tower. Each 
+                            gradient list is a list of (gradient, variable) 
+                            tuples for all variables
+        :return: a list of pairs of (gradient, variable)s where gradient has been 
+                 averaged across all towers
         """
         averaged_grads = []
         for grads_and_vars in zip(*tower_grads):
@@ -83,15 +85,13 @@ class Model(object):
         return averaged_grads
 
     def _join_tower_results(self, corrects, accuracies, tower_grads, total_losses):
-        """Aggregates the results and gradients over all towers.
-
-        Args:
-            corrects: a list of the numbers of correct predictions for each tower.
-            accuracies: a list of the accuracies for each tower.
-            tower_grads: a list of gradient lists for each tower.
-            total_losses: a list of total_loss for each tower
-        Returns:
-            A JoinedResult of evaluation results.
+        """
+        Aggregates the results and gradients over all towers.
+        :param corrects: a list of the numbers of correct predictions for each tower
+        :param accuracies: a list of the accuracies for each tower
+        :param tower_grads: a list of gradient lists for each tower
+        :param tower_losses: a list of total_loss for each tower
+        :return: a JointResult of evaluation results
         """
         # average gradients
         grads = self._average_gradients(tower_grads)
@@ -116,32 +116,26 @@ class Model(object):
 
     @abc.abstractmethod
     def build_replica(self, tower_idx):
-        """Adds a replica graph ops.
-
+        """
+        Adds a replica graph ops.
         Builds the architecture of the neural net to derive logits from 
         batched_dataset. The inference graph defined here should involve 
         trainable variables otherwise the optimizer will raise a ValueError.
-
-        Args:
-            tower_idx: the index number for this tower. Each tower is named
-                as tower_{tower_idx} and resides on gpu:{tower_idx}.
-        Returns:
-            Inferred namedtuple containing (logits, None).
+        :param tower_idx: the index number of this tower. Each tower is 
+                          named as tower_{tower_idx} and resides on 'gpu:{tower_idx}'
+        :return: an Inferred namedtuple contains (logits, None)
         """
         raise NotImplementedError('Not implemented.')
     
     def _build_single_tower(self, tower_idx):
-        """Calculates the model gradient for one tower.
-        
+        """
+        Calculates the model gradient for one tower.
         Adds the inference and loss operations to the graph. Calculates the 
         gradients based on the loss. 
-
-        Args:
-            tower_idx: the index number for this tower. Each tower is named
-                as tower_{tower_idx} and resides on gpu:{tower_idx}.
-        Returns:
-            TowerResult: a namedtuple containing inferred logits, number of correct
-                predictions per batch, and the gradients 
+        :param tower_idx: the index number of this tower. Each tower is
+                          named as tower_{tower_idx} and resides on 'gpu:{tower_idx}'
+        :return: a TowerResult namedtuple contains inferred logits, number of 
+                 correct predictions per batch, and the gradients
         """
         with tf.device('/gpu:%d' % tower_idx):
             with tf.name_scope('tower_%d' % tower_idx) as scope:
@@ -160,14 +154,12 @@ class Model(object):
         return TowerResult(inferred, num_correct_per_batch, accuracy, grads, total_loss)
     
     def build_model_on_multi_gpus(self):
-        """Build the model and Graph and add the train ops on single GPU.
-
+        """
+        Build the model and Graph and add the train ops on single GPU.
         Distributes the inference and gradient computation on multiple GPUs.
         Then aggregates the gradients and returns resultant ops.
-
-        Returns:
-            joined_results: a namedtuple containing {summary}, {train_op},
-                {correct}, {accuracy}.
+        :return: a JoinedResult namedtuple contains 'summary', 'train_op', 
+                 'correct', 'accuracy', 'total_loss'
         """
         inferreds = []
         corrects = []

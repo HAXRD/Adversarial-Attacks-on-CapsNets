@@ -25,29 +25,26 @@ from models.layers import variables
 from models.layers import capsule_utils
 
 class CapsuleModel(model.Model):
-    """A single GPU model with capsule layers.
-
+    """
+    A single GPU model with capsule layers.
     The inference graph includes a 256-channel ReLU convolutional layer,
     a 32x8(rank)-Squash convolutional layer and a 10x8(rank) Squash with routing 
     Capsule layer.
     """
 
     def _remake(self, capsule_embedding, batched_images, batched_labels): # TODO: undone.
-        """Adds the reconstruction subnetwork to build the remakes.
-
+        """
+        Adds the reconstruction subnetwork to build the remakes.
         This subnetwork shares the variables between different target remakes.
         It adds the subnetwork for the first target and reuses the weight 
         variables for the second one.
-
-        Args:
-            capsule_embedding: a 3R tensor of shape (batch, 10, 16) containing 
-                network embeddings for each digit in the image if present.
-            batched_images: placeholder reference for input batched images.
-            batched_labels: placeholder reference for input batched labels.
-        Returns:
-            A list of network remakes of the targets.
+        :param capsule_embedding: a 3D tensor of shape (batch, 10, 16) contains 
+                                  network embeddings for each digit in the image 
+                                  if it is present
+        :param batched_images: a placeholder reference for input batched images
+        :param batched_labels: a placeholder reference for input batched labels
+        :return: a list of network remakes of the targets
         """
-        # Image specs
         image_size = self._specs['image_size']
         image_depth = self._specs['depth']
 
@@ -69,8 +66,8 @@ class CapsuleModel(model.Model):
         return remake_reshaped
 
     def _build_capsule(self, input_tensor, num_classes, tower_idx):
-        """Adds capsule layers.
-
+        """
+        Adds capsule layers.
         A slim convolutional capsule layer transforms the input tensor to capsule
         format. The nonlinearity for slim convolutional capsule is squash function
         but there is no routing and each sptial instantiation of capsule is 
@@ -79,12 +76,10 @@ class CapsuleModel(model.Model):
         connected capsule layer, the grid position of convolutional capsule is
         merged with different types of capsules' dimmensions and capsule2 learns
         different transformations for possible `capsule space` arrangement.
-
-        Args:
-            input_tensor: 5 rank input tensor, shape (batch, 1, 256, h, w)
-            num_classes: number of object categories. Used as the output dimmension.
-        Returns:
-            A 3R tensor of the next capsule layer with 10 capsule embeddings.
+        :param input_tensor: 5D input tensor, shape (batch, 1, 256, h, w)
+        :param num_classes: number of object categories, which is used as the 
+                            output dimmension
+        :return: a 3D tensor of the next capsule layer with 10 capsule embeddings
         """
         capsule1 = capsule_utils.conv_slim_capsule(
             tower_idx,
@@ -119,19 +114,15 @@ class CapsuleModel(model.Model):
             leaky=self._hparams.leaky)
 
     def build_replica(self, tower_idx):
-        """Adds a replica graph ops.
-
+        """
+        Adds a replica graph ops.
         Builds the architecture of the neural net to derive logits from 
         batched_dataset. The inference graph defined here should involve 
         trainable variables otherwise the optimizer will raise a ValueError.
-
-        Args:
-            tower_idx: the index number for this tower. Each tower is named
-                as tower_{tower_idx} and resides on gpu:{tower_idx}.
-        Returns:
-            Inferred namedtuple containing (logits, recons).
+        :param tower_idx: the index number for this tower. Each tower is named
+                          as tower_{tower_idx} and resides on gpu:{tower_idx}
+        :return: an Inferred namedtuple contains (logits, recons)
         """
-        # Image specs
         image_size = self._specs['image_size']
         image_depth = self._specs['depth']
         num_classes = self._specs['num_classes']
@@ -139,18 +130,18 @@ class CapsuleModel(model.Model):
         # Define input_tensor for input batched_images
         batched_images = tf.placeholder(tf.float32,
             shape=[None, image_size, image_size, image_depth],
-            name='batched_images') # (?, h, w, 3)
-        """visual"""
-        tf.add_to_collection('tower_%d_batched_images' % tower_idx, batched_images) # this is for batched_images input
+            name='batched_images') 
+        tf.add_to_collection('tower_%d_batched_images' % tower_idx, batched_images) #! visual
 
-        batched_images_splits = tf.split(batched_images, num_or_size_splits=self._specs['batch_size'], axis=0) # this is for gradient computation
+        batched_images_splits = tf.split(
+            batched_images, num_or_size_splits=self._specs['batch_size'], axis=0) # this is for gradient computation
         for i in range(self._specs['batch_size']):
             tf.add_to_collection('tower_%d_batched_images_split' % tower_idx, batched_images_splits[i])
         
-        batched_images = tf.concat(batched_images_splits, axis=0) # convert back to normal
+        batched_images = tf.concat(batched_images_splits, axis=0) 
         batched_images = tf.transpose(batched_images, [0, 3, 1, 2])
 
-        # declare the threshold placeholder for ensemble evaluation
+        # Declare the threshold placeholder for ensemble evaluation
         threshold = tf.placeholder(tf.float32, name='threshold')
         tf.add_to_collection('tower_%d_batched_threshold' % tower_idx, threshold)
 
@@ -181,8 +172,7 @@ class CapsuleModel(model.Model):
         # Declare one-hot format placeholder for batched_labels
         batched_labels = tf.placeholder(tf.int32,
             shape=[None, num_classes], name='batched_labels')
-        """visual"""
-        tf.add_to_collection('tower_%d_batched_labels' % tower_idx, batched_labels)
+        tf.add_to_collection('tower_%d_batched_labels' % tower_idx, batched_labels) #! visual
         
         # Reconstruction
         remake = None
