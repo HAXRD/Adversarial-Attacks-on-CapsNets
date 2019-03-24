@@ -1,60 +1,64 @@
+# Adversarial Attacks on Capsule Neural Networks
+Code for thesis (first part): [Adversarial Attacks on Capsule Neural Networks](https://github.com/XxuChen/Adversarial-Attack-on-CapsNets)
+## Prerequisite
+- Python3
+- Tensorflow
+- NumPy
+- GPU
+- sklearn
 
-# How to run this code
+## Generated Adversarial Examples with Different Models and Datasets
+![vis](notebooks/VIS.jpg)
 
-
-## Download datasets
+## Download and Prepare Datasets
 ```
-./download_data.sh
-```
-**Some datasets may not be accessable in countries with limited internet access.**
-
-## Run the unit test code
-```
-python unitT_prepare_dataset.py
-python unitT_mnist_input.py
-python unitT_fashion_mnist_input.py
-python unitT_svhn_input.py
-python unitT_cifar10_input.py
-python unitT_exp_train.py
-python unitT_exp_gen_adv.py
-python unitT_exp_test.py
+chmod +x ./download_data.sh && python prepre_dataset.py
 ```
 
+## Sample Commands
+Here are some sample commands to run training, test, or generating adversarial attacks. More commands can be referred in folder `scripts`.
 
-## Prepare datasets
+### Train
 ```
-python prepare_dataset.py
-```
+source ~/tfp363/bin/activate
 
-## Train
-```
-python experiment.py --data_dir=data/caps/mnist/ --dataset=mnist --summary_dir=summary/ --save_epochs=1 --max_epochs=3 --model=caps
-```
+REPO_DIR=/home/xuc/Adversarial-Attack-on-CapsNets
+SUMMARY_DIR=/home/xuc/scratch/xuc/summary/
 
-## Generate Adversarial Examples for Testing
-```
-python experiment.py --mode=gen_adv --num_gpus=2 --dataset=mnist --adversarial_method=FGSM --total_batch_size=2 --summary_dir=summary/caps/mnist/Default/ --data_dir=data/caps/mnist/
-```
+MODEL=caps
+DATASET=cifar10
 
-## Test
-```
-python experiment.py --summary_dir=summary/caps/mnist/Default/ --load_test_path=data/caps/mnist/test.npz --mode=test
+python $REPO_DIR/experiment.py --data_dir=$REPO_DIR/data/$MODEL/$DATASET --dataset=$DATASET --summary_dir=$SUMMARY_DIR --model=$MODEL --hparams_override=remake=false
 ```
 
-## For debug
+### Test
 ```
-salloc --time=3:0:0 --mem=30000M --cpus-per-task=6 --gres=gpu:2
-```
-**train**
-```
-python experiment.py --data_dir=data/caps/cifar10/ --dataset=cifar10 --adversarial_method=Default --model=caps --save_epochs=1 --max_epochs=2 --total_batch_size=50 --summary_dir=summary/b50
-```
-**gen_adv**
-```
-python experiment.py --mode=gen_adv --data_dir=data/caps/cifar10/ --dataset=cifar10 --total_batch_size=50 --adversarial_method=BIM --epsilon=2 --iteration_n=1 --summary_dir=summary/b50/caps/cifar10/Default/
+source ~/tfp363/bin/activate
+
+REPO_DIR=/home/xuc/Adversarial-Attack-on-CapsNets
+SUMMARY_DIR=/home/xuc/scratch/xuc/summary/
+
+MODEL=caps
+DATASET=cifar10
+
+TEST_FILE=test.npz
+
+python $REPO_DIR/experiment.py --mode=test --summary_dir=$SUMMARY_DIR/$MODEL/$DATASET/Default --load_test_path=$REPO_DIR/data/$MODEL/$DATASET/$TEST_FILE
 ```
 
-**test**
+### Generate Adversarial Examples
 ```
-python experiment.py --mode=test --adversarial_method=Default --total_batch_size=50 --summary_dir=summary/b50/caps/cifar10/Default/ --load_test_path=data/caps/cifar10/test.npz
+source ~/tfp363/bin/activate
+
+REPO_DIR=/home/xuc/Adversarial-Attack-on-CapsNets
+SUMMARY_DIR=/home/xuc/scratch/xuc/summary/
+
+MODEL=caps
+DATASET=cifar10
+
+ADVERSARIAL_METHOD=BIM 
+EPSILON=1
+ITERATION_N=2
+
+python $REPO_DIR/experiment.py --mode=gen_adv --data_dir=$REPO_DIR/data/$MODEL/$DATASET --dataset=$DATASET --adversarial_method=$ADVERSARIAL_METHOD --epsilon=$EPSILON --iteration_n=$ITERATION_N --summary_dir=$SUMMARY_DIR/$MODEL/$DATASET/Default/
 ```
